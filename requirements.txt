@@ -1,0 +1,4 @@
+bytecode==0.8.0
+
+pytest==4.4.1
+snapshottest==0.5.1
