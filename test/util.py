@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from dis import Bytecode
 
 from bytecode import Instr

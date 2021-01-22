@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from bytecode import Bytecode, dump_bytecode
 from textwrap import dedent
 
