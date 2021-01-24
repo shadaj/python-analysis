@@ -16,7 +16,7 @@ pre_opcode_instrument = {
   "STORE_SUBSCR": 3,
   "BINARY_SUBSCR": 2,
   "LOAD_ATTR": 1,
-  "CALL_FUNCTION": lambda op: op.arg + 1
+  "CALL_FUNCTION": lambda op: op.arg + 1 # capture all args as well as the function
 }
 
 # Opcodes to instrument after they run
@@ -27,7 +27,7 @@ post_opcode_instrument = {
   "LOAD_CLOSURE": 1,
   "LOAD_ATTR": 1,
   "BINARY_SUBSCR": 1,
-  "CALL_FUNCTION": 1
+  "CALL_FUNCTION": 1 # capture the return value
 }
 
 def emit_instrument(instrumented, op, i, stacksize, label_to_op_index, code_id, is_post, opcode=None, arg=None):
@@ -167,7 +167,7 @@ def emit_instrument(instrumented, op, i, stacksize, label_to_op_index, code_id, 
       lineno = op.lineno
     ))
 
-def run_or_return_value(maybe_lambda, input):
+def run_or_return_value(maybe_lambda, input: Instr):
   if isinstance(maybe_lambda, LambdaType):
     return maybe_lambda(input)
   else:
@@ -208,8 +208,8 @@ def instrument_bytecode(code: Bytecode, code_id=0):
   
   return instrumented
 
-def instrument_codeobject(code, code_id=0):
+def instrument_codeobject(code, code_id: int = 0):
   return instrument_bytecode(Bytecode.from_code(code), code_id)
 
-def instrument_source(source: str, code_id):
+def instrument_source(source: str, code_id: int):
   return instrument_codeobject(compile(source, "<string>", "exec"), code_id)
