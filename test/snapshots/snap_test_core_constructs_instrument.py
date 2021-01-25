@@ -7,7 +7,7 @@ from snapshottest import Snapshot
 
 snapshots = Snapshot()
 
-snapshots['test_load_name 1'] = '''
+snapshots['test_load_name (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_NAME                0 (xx)
 +              2 BUILD_LIST               1
@@ -27,7 +27,7 @@ Code Object: <module>
               30 RETURN_VALUE
 '''
 
-snapshots['test_store_name 1'] = '''
+snapshots['test_store_name (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_CONST               0 (1)
 +              2 BUILD_LIST               1
@@ -47,7 +47,7 @@ Code Object: <module>
               30 RETURN_VALUE
 '''
 
-snapshots['test_load_attr 1'] = '''
+snapshots['test_load_attr (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_NAME                0 (x)
 +              2 BUILD_LIST               1
@@ -92,7 +92,7 @@ Code Object: <module>
               80 RETURN_VALUE
 '''
 
-snapshots['test_store_attr 1'] = '''
+snapshots['test_store_attr (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_CONST               0 (1)
                2 LOAD_NAME                0 (x)
@@ -128,7 +128,7 @@ Code Object: <module>
               62 RETURN_VALUE
 '''
 
-snapshots['test_list_load 1'] = '''
+snapshots['test_list_load (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_NAME                0 (x)
 +              2 BUILD_LIST               1
@@ -177,7 +177,7 @@ Code Object: <module>
               88 RETURN_VALUE
 '''
 
-snapshots['test_list_store 1'] = '''
+snapshots['test_list_store (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_CONST               0 (1)
                2 LOAD_NAME                0 (x)
@@ -214,7 +214,7 @@ Code Object: <module>
               64 RETURN_VALUE
 '''
 
-snapshots['test_for_loop 1'] = '''
+snapshots['test_for_loop (1, 3, 7)'] = '''
 Code Object: <module>
 +  2           0 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              2 BUILD_LIST               0
@@ -283,7 +283,7 @@ Code Object: <module>
              128 RETURN_VALUE
 '''
 
-snapshots['test_while_loop 1'] = '''
+snapshots['test_while_loop (1, 3, 7)'] = '''
 Code Object: <module>
 +  2           0 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              2 BUILD_LIST               0
@@ -325,7 +325,7 @@ Code Object: <module>
               74 RETURN_VALUE
 '''
 
-snapshots['test_function_definition 1'] = '''
+snapshots['test_function_definition (1, 3, 7)'] = '''
 Code Object: <module>
 ~  2           0 LOAD_CONST               0 (<code object f at SOME ADDRESS, file "<string>", line 2>)
                2 LOAD_CONST               1 ('f')
@@ -390,7 +390,7 @@ Code Object: f
                2 RETURN_VALUE
 '''
 
-snapshots['test_inner_function 1'] = '''
+snapshots['test_inner_function (1, 3, 7)'] = '''
 Code Object: <module>
 ~  2           0 LOAD_CONST               0 (<code object f at SOME ADDRESS, file "<string>", line 2>)
                2 LOAD_CONST               1 ('f')
@@ -514,7 +514,7 @@ Code Object: g
                2 RETURN_VALUE
 '''
 
-snapshots['test_nonlocal_ref 1'] = '''
+snapshots['test_nonlocal_ref (1, 3, 7)'] = '''
 Code Object: <module>
 ~  2           0 LOAD_CONST               0 (<code object f at SOME ADDRESS, file "<string>", line 2>)
                2 LOAD_CONST               1 ('f')

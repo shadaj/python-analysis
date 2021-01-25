@@ -6,6 +6,7 @@ from dis import opname
 from textwrap import dedent
 
 import re
+import sys
 
 def source_test(snapshot, source):
   root_codeobject = compile(source, "<string>", "exec")
@@ -24,7 +25,8 @@ def source_test(snapshot, source):
 
     diff_string += "\n"
 
-  snapshot.assert_match(diff_string)
+  snapshot.assert_match(diff_string, name=str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor)))
+  snapshot.snapshot_counter += 1
 
   def clean_stack_addresses(elem):
     if type(elem).__name__ == "cell": # CellType only in Python 3.8
@@ -52,7 +54,8 @@ def source_test(snapshot, source):
 
   run_with_handler(id_to_bytecode_new_codeobjects[code_to_id[root_codeobject]].to_code(), event_receiver)
 
-  snapshot.assert_match(events)
+  snapshot.assert_match(events, name=(str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor))))
+  snapshot.snapshot_counter += 1
 
 def test_load_name(snapshot):
   source_test(snapshot, dedent(
