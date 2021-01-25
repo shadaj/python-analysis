@@ -11,14 +11,17 @@ from types import ModuleType
 _Path = Union[bytes, str]
 
 class PatchingLoader(SourceFileLoader):
-  def __init__(self, fullname: str, path: str) -> None:
+  existing_loader: Loader
+
+  def __init__(self, fullname: str, path: str, existing_loader: Loader) -> None:
+    self.existing_loader = existing_loader
     super(SourceFileLoader, self).__init__(fullname, path)
 
   def create_module(self, spec: ModuleSpec) -> Optional[ModuleType]:
-    return None
+    return self.existing_loader.create_module(spec)
 
   def exec_module(self, module: ModuleType) -> None:
-    module_code = self.get_code(self.name)
+    module_code = self.existing_loader.get_code(self.name)
     
     [id_to_bytecode, code_to_id] = extract_all_codeobjects(module_code)
     id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id)
@@ -30,14 +33,13 @@ class PatchingLoader(SourceFileLoader):
     exec(instrumented.to_code(), module.__dict__)
 
     return
-    
 
 class PatchingPathFinder(MetaPathFinder):
-  existing_importers: List[object]
+  existing_importers: List[MetaPathFinder]
   current_path: Optional[Sequence[_Path]]
 
   def __init__(self):
-    self.existing_importers = sys.meta_path
+    self.existing_importers = sys.meta_path.copy()
 
   def install(self):
     sys.meta_path.insert(-1, self)
@@ -50,4 +52,10 @@ class PatchingPathFinder(MetaPathFinder):
     else:
       path_to_module = module_name + ".py"
 
-    return PatchingLoader(fullname, path_to_module)
+    existing_loader = None
+    for importer in self.existing_importers:
+      existing_loader = importer.find_module(fullname, path)
+      if existing_loader is not None:
+        break
+
+    return PatchingLoader(fullname, path_to_module, existing_loader)

@@ -27,7 +27,7 @@ class StackTrackingReceiver(object):
       return str(maybe_id)
 
   def stringify_frame_id(self, frame_id):
-    return "frame #" + str(frame_id) + " (" + str(self.frame_tracking.get_by_id(frame_id)) + ")"
+    return "frame #" + str(frame_id)# + " (" + str(self.frame_tracking.get_by_id(frame_id)) + ")"
 
   def print_stack_indent(self):
     print("\t" * (len(self.loop_stack) + len(self.function_call_stack)), end="")
@@ -165,5 +165,7 @@ class StackTrackingReceiver(object):
         )
       else:
         self.print_stack_indent()
+        print("UNKNOWN OPCODE:")
+        self.print_stack_indent()
         print("stack:", stack, "| opcode:", opname[opcode], "| arg:", arg, "| orig op:", self.id_to_orig_bytecode[code_id][opindex])
-        raise NotImplementedError()
+        # raise NotImplementedError()

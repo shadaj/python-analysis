@@ -6,3 +6,5 @@ from module_to_patch import hello
 
 foo = hello()
 print(foo)
+
+import string
