@@ -3,6 +3,8 @@ from .util import diff_bytecodes
 
 from textwrap import dedent
 
+import sys
+
 def source_test(snapshot, source):
   root_codeobject = compile(source, "<string>", "exec")
   [id_to_bytecode, code_to_id] = extract_all_codeobjects(root_codeobject)
@@ -15,7 +17,8 @@ def source_test(snapshot, source):
     diff_string += diff_bytecodes(id_to_bytecode[code_id], id_to_bytecode_new_codeobjects[code_id])[0]
     diff_string += "\n"
 
-  snapshot.assert_match(diff_string)
+  snapshot.assert_match(diff_string, name=str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor)))
+  snapshot.snapshot_counter += 1
 
 def test_load_name(snapshot):
   source_test(snapshot, dedent(
