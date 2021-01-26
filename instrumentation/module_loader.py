@@ -26,22 +26,23 @@ class PatchingLoader(SourceFileLoader):
     return self.existing_loader.create_module(spec)
 
   def exec_module(self, module: ModuleType) -> None:
-    module_code = self.existing_loader.get_code(self.name)
-    
-    [id_to_bytecode, code_to_id] = extract_all_codeobjects(module_code)
-    id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id)
+    if hasattr(self.existing_loader, "get_code"):
+      module_code = self.existing_loader.get_code(self.name) # type: ignore
+      
+      [id_to_bytecode, code_to_id] = extract_all_codeobjects(module_code)
+      id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id)
 
-    instrumented = id_to_bytecode_new_codeobjects[code_to_id[module_code]]
+      instrumented = id_to_bytecode_new_codeobjects[code_to_id[module_code]]
 
-    def common_receiver(stack, opcode, arg, opindex, code_id, is_post):
-      for receiver in _active_receivers:
-        receiver(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
+      def common_receiver(stack, opcode, arg, opindex, code_id, is_post):
+        for receiver in _active_receivers:
+          receiver(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
 
-    # TODO(shadaj): use an immutable overlay instead
-    module.__dict__["py_instrument_receiver"] = common_receiver
-    exec(instrumented.to_code(), module.__dict__)
-
-    return
+      # TODO(shadaj): use an immutable overlay instead
+      module.__dict__["py_instrument_receiver"] = common_receiver
+      exec(instrumented.to_code(), module.__dict__)
+    else:
+      self.existing_loader.exec_module(module)
 
 class PatchingPathFinder(MetaPathFinder):
   existing_importers: List[MetaPathFinder]
@@ -70,4 +71,7 @@ class PatchingPathFinder(MetaPathFinder):
       if existing_loader is not None:
         break
 
-    return PatchingLoader(fullname, path_to_module, existing_loader)
+    if existing_loader is not None:
+      return PatchingLoader(fullname, path_to_module, existing_loader)
+    else:
+      return None
