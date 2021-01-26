@@ -12,7 +12,7 @@ def extract_all_codeobjects(codeobject):
   def explore(obj):
     nonlocal next_code_id
 
-    if obj in seen_objects:
+    if obj in seen_objects or obj is None:
       pass
     else:
       current_id = next_code_id

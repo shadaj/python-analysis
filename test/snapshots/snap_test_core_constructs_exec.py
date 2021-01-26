@@ -14,16 +14,16 @@ Code Object: <module>
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              1 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (101)
-+             12 LOAD_CONST               1 ('list')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               2 (0)
-+             18 LOAD_CONST               3 (True)
++             10 LOAD_CONST               1 (101)
++             12 LOAD_CONST               2 ('list')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               3 (0)
++             18 LOAD_CONST               4 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
               26 POP_TOP
-              28 LOAD_CONST               4 (None)
+              28 LOAD_CONST               0 (None)
               30 RETURN_VALUE
 '''
 
@@ -256,15 +256,15 @@ Code Object: <module>
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              1 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (101)
-+             12 LOAD_CONST               1 ('type')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               2 (0)
-+             18 LOAD_CONST               3 (True)
++             10 LOAD_CONST               1 (101)
++             12 LOAD_CONST               2 ('type')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               3 (0)
++             18 LOAD_CONST               4 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
-              26 LOAD_CONST               4 ('')
+              26 LOAD_CONST               0 ('')
               28 LOAD_CONST               5 (())
               30 BUILD_MAP                0
 +             32 BUILD_LIST               4
@@ -274,7 +274,7 @@ Code Object: <module>
 +             40 LOAD_CONST               6 (131)
 +             42 LOAD_CONST               7 (3)
 +             44 LOAD_CONST               8 (4)
-+             46 LOAD_CONST               2 (0)
++             46 LOAD_CONST               3 (0)
 +             48 LOAD_CONST               9 (False)
 +             50 CALL_FUNCTION            6
 +             52 POP_TOP
@@ -290,8 +290,8 @@ Code Object: <module>
 +             72 LOAD_CONST               6 (131)
 +             74 LOAD_CONST               7 (3)
 +             76 LOAD_CONST               8 (4)
-+             78 LOAD_CONST               2 (0)
-+             80 LOAD_CONST               3 (True)
++             78 LOAD_CONST               3 (0)
++             80 LOAD_CONST               4 (True)
 +             82 CALL_FUNCTION            6
 +             84 POP_TOP
 +             86 UNPACK_SEQUENCE          1
@@ -300,9 +300,9 @@ Code Object: <module>
 +             92 LOAD_GLOBAL              1 (py_instrument_receiver)
 +             94 ROT_TWO
 +             96 LOAD_CONST               6 (131)
-+             98 LOAD_CONST               2 (0)
++             98 LOAD_CONST               3 (0)
 +            100 LOAD_CONST              10 (5)
-+            102 LOAD_CONST               2 (0)
++            102 LOAD_CONST               3 (0)
 +            104 LOAD_CONST               9 (False)
 +            106 CALL_FUNCTION            6
 +            108 POP_TOP
@@ -313,10 +313,10 @@ Code Object: <module>
 +            118 LOAD_GLOBAL              1 (py_instrument_receiver)
 +            120 ROT_TWO
 +            122 LOAD_CONST               6 (131)
-+            124 LOAD_CONST               2 (0)
++            124 LOAD_CONST               3 (0)
 +            126 LOAD_CONST              10 (5)
-+            128 LOAD_CONST               2 (0)
-+            130 LOAD_CONST               3 (True)
++            128 LOAD_CONST               3 (0)
++            130 LOAD_CONST               4 (True)
 +            132 CALL_FUNCTION            6
 +            134 POP_TOP
 +            136 UNPACK_SEQUENCE          1
@@ -327,7 +327,7 @@ Code Object: <module>
 +            146 LOAD_CONST              11 (90)
 +            148 LOAD_CONST              12 ('x')
 +            150 LOAD_CONST              13 (6)
-+            152 LOAD_CONST               2 (0)
++            152 LOAD_CONST               3 (0)
 +            154 LOAD_CONST               9 (False)
 +            156 CALL_FUNCTION            6
 +            158 POP_TOP
@@ -339,11 +339,11 @@ Code Object: <module>
 +            170 DUP_TOP
 +            172 LOAD_GLOBAL              1 (py_instrument_receiver)
 +            174 ROT_TWO
-+            176 LOAD_CONST               0 (101)
++            176 LOAD_CONST               1 (101)
 +            178 LOAD_CONST              12 ('x')
 +            180 LOAD_CONST              15 (8)
-+            182 LOAD_CONST               2 (0)
-+            184 LOAD_CONST               3 (True)
++            182 LOAD_CONST               3 (0)
++            184 LOAD_CONST               4 (True)
 +            186 CALL_FUNCTION            6
 +            188 POP_TOP
 +            190 UNPACK_SEQUENCE          1
@@ -354,7 +354,7 @@ Code Object: <module>
 +            200 LOAD_CONST              16 (95)
 +            202 LOAD_CONST              17 ('a')
 +            204 LOAD_CONST              18 (9)
-+            206 LOAD_CONST               2 (0)
++            206 LOAD_CONST               3 (0)
 +            208 LOAD_CONST               9 (False)
 +            210 CALL_FUNCTION            6
 +            212 POP_TOP
@@ -1045,11 +1045,11 @@ Code Object: f
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (124)
-+             12 LOAD_CONST               1 ('x')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               3 (1)
-+             18 LOAD_CONST               4 (True)
++             10 LOAD_CONST               1 (124)
++             12 LOAD_CONST               2 ('x')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               4 (1)
++             18 LOAD_CONST               5 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
@@ -1171,18 +1171,18 @@ Code Object: <module>
              112 RETURN_VALUE
 
 Code Object: f
-~  3           0 LOAD_CONST               0 (<code object g at SOME ADDRESS, file "<string>", line 3>)
-               2 LOAD_CONST               1 ('f.<locals>.g')
+~  3           0 LOAD_CONST               1 (<code object g at SOME ADDRESS, file "<string>", line 3>)
+               2 LOAD_CONST               2 ('f.<locals>.g')
                4 MAKE_FUNCTION            0
 +              6 BUILD_LIST               1
 +              8 DUP_TOP
 +             10 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             12 ROT_TWO
-+             14 LOAD_CONST               2 (125)
-+             16 LOAD_CONST               3 ('g')
-+             18 LOAD_CONST               4 (3)
-+             20 LOAD_CONST               5 (1)
-+             22 LOAD_CONST               6 (False)
++             14 LOAD_CONST               3 (125)
++             16 LOAD_CONST               4 ('g')
++             18 LOAD_CONST               5 (3)
++             20 LOAD_CONST               6 (1)
++             22 LOAD_CONST               7 (False)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
@@ -1192,11 +1192,11 @@ Code Object: f
 +             36 DUP_TOP
 +             38 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             40 ROT_TWO
-+             42 LOAD_CONST               7 (124)
-+             44 LOAD_CONST               3 ('g')
-+             46 LOAD_CONST               8 (4)
-+             48 LOAD_CONST               5 (1)
-+             50 LOAD_CONST               9 (True)
++             42 LOAD_CONST               8 (124)
++             44 LOAD_CONST               4 ('g')
++             46 LOAD_CONST               9 (4)
++             48 LOAD_CONST               6 (1)
++             50 LOAD_CONST              10 (True)
 +             52 CALL_FUNCTION            6
 +             54 POP_TOP
 +             56 UNPACK_SEQUENCE          1
@@ -1204,11 +1204,11 @@ Code Object: f
 +             60 DUP_TOP
 +             62 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             64 ROT_TWO
-+             66 LOAD_CONST              10 (131)
-+             68 LOAD_CONST              11 (0)
-+             70 LOAD_CONST              12 (5)
-+             72 LOAD_CONST               5 (1)
-+             74 LOAD_CONST               6 (False)
++             66 LOAD_CONST              11 (131)
++             68 LOAD_CONST              12 (0)
++             70 LOAD_CONST              13 (5)
++             72 LOAD_CONST               6 (1)
++             74 LOAD_CONST               7 (False)
 +             76 CALL_FUNCTION            6
 +             78 POP_TOP
 +             80 UNPACK_SEQUENCE          1
@@ -1217,16 +1217,16 @@ Code Object: f
 +             86 DUP_TOP
 +             88 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             90 ROT_TWO
-+             92 LOAD_CONST              10 (131)
-+             94 LOAD_CONST              11 (0)
-+             96 LOAD_CONST              12 (5)
-+             98 LOAD_CONST               5 (1)
-+            100 LOAD_CONST               9 (True)
++             92 LOAD_CONST              11 (131)
++             94 LOAD_CONST              12 (0)
++             96 LOAD_CONST              13 (5)
++             98 LOAD_CONST               6 (1)
++            100 LOAD_CONST              10 (True)
 +            102 CALL_FUNCTION            6
 +            104 POP_TOP
 +            106 UNPACK_SEQUENCE          1
              108 POP_TOP
-             110 LOAD_CONST              13 (None)
+             110 LOAD_CONST               0 (None)
              112 RETURN_VALUE
 
 Code Object: g
@@ -1387,29 +1387,29 @@ Code Object: f
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (135)
-+             12 LOAD_CONST               1 ('cell')
-+             14 LOAD_CONST               2 ('i')
++             10 LOAD_CONST               1 (135)
++             12 LOAD_CONST               2 ('cell')
++             14 LOAD_CONST               3 ('i')
 +             16 BUILD_MAP                1
-+             18 LOAD_CONST               3 (0)
-+             20 LOAD_CONST               4 (1)
-+             22 LOAD_CONST               5 (True)
++             18 LOAD_CONST               4 (0)
++             20 LOAD_CONST               5 (1)
++             22 LOAD_CONST               6 (True)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
               30 BUILD_TUPLE              1
-~             32 LOAD_CONST               6 (<code object g at SOME ADDRESS, file "<string>", line 3>)
-              34 LOAD_CONST               7 ('f.<locals>.g')
+~             32 LOAD_CONST               7 (<code object g at SOME ADDRESS, file "<string>", line 3>)
+              34 LOAD_CONST               8 ('f.<locals>.g')
               36 MAKE_FUNCTION            8
 +             38 BUILD_LIST               1
 +             40 DUP_TOP
 +             42 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             44 ROT_TWO
-+             46 LOAD_CONST               8 (125)
-+             48 LOAD_CONST               9 ('g')
-+             50 LOAD_CONST              10 (5)
-+             52 LOAD_CONST               4 (1)
-+             54 LOAD_CONST              11 (False)
++             46 LOAD_CONST               9 (125)
++             48 LOAD_CONST              10 ('g')
++             50 LOAD_CONST              11 (5)
++             52 LOAD_CONST               5 (1)
++             54 LOAD_CONST              12 (False)
 +             56 CALL_FUNCTION            6
 +             58 POP_TOP
 +             60 UNPACK_SEQUENCE          1
@@ -1419,11 +1419,11 @@ Code Object: f
 +             68 DUP_TOP
 +             70 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             72 ROT_TWO
-+             74 LOAD_CONST              12 (124)
-+             76 LOAD_CONST               9 ('g')
-+             78 LOAD_CONST              13 (6)
-+             80 LOAD_CONST               4 (1)
-+             82 LOAD_CONST               5 (True)
++             74 LOAD_CONST              13 (124)
++             76 LOAD_CONST              10 ('g')
++             78 LOAD_CONST              14 (6)
++             80 LOAD_CONST               5 (1)
++             82 LOAD_CONST               6 (True)
 +             84 CALL_FUNCTION            6
 +             86 POP_TOP
 +             88 UNPACK_SEQUENCE          1
@@ -1431,11 +1431,11 @@ Code Object: f
 +             92 DUP_TOP
 +             94 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             96 ROT_TWO
-+             98 LOAD_CONST              14 (131)
-+            100 LOAD_CONST               3 (0)
-+            102 LOAD_CONST              15 (7)
-+            104 LOAD_CONST               4 (1)
-+            106 LOAD_CONST              11 (False)
++             98 LOAD_CONST              15 (131)
++            100 LOAD_CONST               4 (0)
++            102 LOAD_CONST              16 (7)
++            104 LOAD_CONST               5 (1)
++            106 LOAD_CONST              12 (False)
 +            108 CALL_FUNCTION            6
 +            110 POP_TOP
 +            112 UNPACK_SEQUENCE          1
@@ -1444,16 +1444,16 @@ Code Object: f
 +            118 DUP_TOP
 +            120 LOAD_GLOBAL              0 (py_instrument_receiver)
 +            122 ROT_TWO
-+            124 LOAD_CONST              14 (131)
-+            126 LOAD_CONST               3 (0)
-+            128 LOAD_CONST              15 (7)
-+            130 LOAD_CONST               4 (1)
-+            132 LOAD_CONST               5 (True)
++            124 LOAD_CONST              15 (131)
++            126 LOAD_CONST               4 (0)
++            128 LOAD_CONST              16 (7)
++            130 LOAD_CONST               5 (1)
++            132 LOAD_CONST               6 (True)
 +            134 CALL_FUNCTION            6
 +            136 POP_TOP
 +            138 UNPACK_SEQUENCE          1
              140 POP_TOP
-             142 LOAD_CONST              16 (None)
+             142 LOAD_CONST               0 (None)
              144 RETURN_VALUE
 
 Code Object: g
@@ -1462,13 +1462,13 @@ Code Object: g
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (136)
-+             12 LOAD_CONST               1 ('free')
-+             14 LOAD_CONST               2 ('i')
++             10 LOAD_CONST               1 (136)
++             12 LOAD_CONST               2 ('free')
++             14 LOAD_CONST               3 ('i')
 +             16 BUILD_MAP                1
-+             18 LOAD_CONST               3 (0)
-+             20 LOAD_CONST               4 (2)
-+             22 LOAD_CONST               5 (True)
++             18 LOAD_CONST               4 (0)
++             20 LOAD_CONST               5 (2)
++             22 LOAD_CONST               6 (True)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
@@ -1590,16 +1590,16 @@ Code Object: <module>
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              1 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (101)
-+             12 LOAD_CONST               1 ('list')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               2 (0)
-+             18 LOAD_CONST               3 (True)
++             10 LOAD_CONST               1 (101)
++             12 LOAD_CONST               2 ('list')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               3 (0)
++             18 LOAD_CONST               4 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
               26 POP_TOP
-              28 LOAD_CONST               4 (None)
+              28 LOAD_CONST               0 (None)
               30 RETURN_VALUE
 '''
 
@@ -1832,15 +1832,15 @@ Code Object: <module>
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              1 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (101)
-+             12 LOAD_CONST               1 ('type')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               2 (0)
-+             18 LOAD_CONST               3 (True)
++             10 LOAD_CONST               1 (101)
++             12 LOAD_CONST               2 ('type')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               3 (0)
++             18 LOAD_CONST               4 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
-              26 LOAD_CONST               4 ('')
+              26 LOAD_CONST               0 ('')
               28 LOAD_CONST               5 (())
               30 BUILD_MAP                0
 +             32 BUILD_LIST               4
@@ -1850,7 +1850,7 @@ Code Object: <module>
 +             40 LOAD_CONST               6 (131)
 +             42 LOAD_CONST               7 (3)
 +             44 LOAD_CONST               8 (4)
-+             46 LOAD_CONST               2 (0)
++             46 LOAD_CONST               3 (0)
 +             48 LOAD_CONST               9 (False)
 +             50 CALL_FUNCTION            6
 +             52 POP_TOP
@@ -1866,8 +1866,8 @@ Code Object: <module>
 +             72 LOAD_CONST               6 (131)
 +             74 LOAD_CONST               7 (3)
 +             76 LOAD_CONST               8 (4)
-+             78 LOAD_CONST               2 (0)
-+             80 LOAD_CONST               3 (True)
++             78 LOAD_CONST               3 (0)
++             80 LOAD_CONST               4 (True)
 +             82 CALL_FUNCTION            6
 +             84 POP_TOP
 +             86 UNPACK_SEQUENCE          1
@@ -1876,9 +1876,9 @@ Code Object: <module>
 +             92 LOAD_GLOBAL              1 (py_instrument_receiver)
 +             94 ROT_TWO
 +             96 LOAD_CONST               6 (131)
-+             98 LOAD_CONST               2 (0)
++             98 LOAD_CONST               3 (0)
 +            100 LOAD_CONST              10 (5)
-+            102 LOAD_CONST               2 (0)
++            102 LOAD_CONST               3 (0)
 +            104 LOAD_CONST               9 (False)
 +            106 CALL_FUNCTION            6
 +            108 POP_TOP
@@ -1889,10 +1889,10 @@ Code Object: <module>
 +            118 LOAD_GLOBAL              1 (py_instrument_receiver)
 +            120 ROT_TWO
 +            122 LOAD_CONST               6 (131)
-+            124 LOAD_CONST               2 (0)
++            124 LOAD_CONST               3 (0)
 +            126 LOAD_CONST              10 (5)
-+            128 LOAD_CONST               2 (0)
-+            130 LOAD_CONST               3 (True)
++            128 LOAD_CONST               3 (0)
++            130 LOAD_CONST               4 (True)
 +            132 CALL_FUNCTION            6
 +            134 POP_TOP
 +            136 UNPACK_SEQUENCE          1
@@ -1903,7 +1903,7 @@ Code Object: <module>
 +            146 LOAD_CONST              11 (90)
 +            148 LOAD_CONST              12 ('x')
 +            150 LOAD_CONST              13 (6)
-+            152 LOAD_CONST               2 (0)
++            152 LOAD_CONST               3 (0)
 +            154 LOAD_CONST               9 (False)
 +            156 CALL_FUNCTION            6
 +            158 POP_TOP
@@ -1915,11 +1915,11 @@ Code Object: <module>
 +            170 DUP_TOP
 +            172 LOAD_GLOBAL              1 (py_instrument_receiver)
 +            174 ROT_TWO
-+            176 LOAD_CONST               0 (101)
++            176 LOAD_CONST               1 (101)
 +            178 LOAD_CONST              12 ('x')
 +            180 LOAD_CONST              15 (8)
-+            182 LOAD_CONST               2 (0)
-+            184 LOAD_CONST               3 (True)
++            182 LOAD_CONST               3 (0)
++            184 LOAD_CONST               4 (True)
 +            186 CALL_FUNCTION            6
 +            188 POP_TOP
 +            190 UNPACK_SEQUENCE          1
@@ -1930,7 +1930,7 @@ Code Object: <module>
 +            200 LOAD_CONST              16 (95)
 +            202 LOAD_CONST              17 ('a')
 +            204 LOAD_CONST              18 (9)
-+            206 LOAD_CONST               2 (0)
++            206 LOAD_CONST               3 (0)
 +            208 LOAD_CONST               9 (False)
 +            210 CALL_FUNCTION            6
 +            212 POP_TOP
@@ -2583,11 +2583,11 @@ Code Object: f
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (124)
-+             12 LOAD_CONST               1 ('x')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               3 (1)
-+             18 LOAD_CONST               4 (True)
++             10 LOAD_CONST               1 (124)
++             12 LOAD_CONST               2 ('x')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               4 (1)
++             18 LOAD_CONST               5 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
@@ -2709,18 +2709,18 @@ Code Object: <module>
              112 RETURN_VALUE
 
 Code Object: f
-~  3           0 LOAD_CONST               0 (<code object g at SOME ADDRESS, file "<string>", line 3>)
-               2 LOAD_CONST               1 ('f.<locals>.g')
+~  3           0 LOAD_CONST               1 (<code object g at SOME ADDRESS, file "<string>", line 3>)
+               2 LOAD_CONST               2 ('f.<locals>.g')
                4 MAKE_FUNCTION            0
 +              6 BUILD_LIST               1
 +              8 DUP_TOP
 +             10 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             12 ROT_TWO
-+             14 LOAD_CONST               2 (125)
-+             16 LOAD_CONST               3 ('g')
-+             18 LOAD_CONST               4 (3)
-+             20 LOAD_CONST               5 (1)
-+             22 LOAD_CONST               6 (False)
++             14 LOAD_CONST               3 (125)
++             16 LOAD_CONST               4 ('g')
++             18 LOAD_CONST               5 (3)
++             20 LOAD_CONST               6 (1)
++             22 LOAD_CONST               7 (False)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
@@ -2730,11 +2730,11 @@ Code Object: f
 +             36 DUP_TOP
 +             38 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             40 ROT_TWO
-+             42 LOAD_CONST               7 (124)
-+             44 LOAD_CONST               3 ('g')
-+             46 LOAD_CONST               8 (4)
-+             48 LOAD_CONST               5 (1)
-+             50 LOAD_CONST               9 (True)
++             42 LOAD_CONST               8 (124)
++             44 LOAD_CONST               4 ('g')
++             46 LOAD_CONST               9 (4)
++             48 LOAD_CONST               6 (1)
++             50 LOAD_CONST              10 (True)
 +             52 CALL_FUNCTION            6
 +             54 POP_TOP
 +             56 UNPACK_SEQUENCE          1
@@ -2742,11 +2742,11 @@ Code Object: f
 +             60 DUP_TOP
 +             62 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             64 ROT_TWO
-+             66 LOAD_CONST              10 (131)
-+             68 LOAD_CONST              11 (0)
-+             70 LOAD_CONST              12 (5)
-+             72 LOAD_CONST               5 (1)
-+             74 LOAD_CONST               6 (False)
++             66 LOAD_CONST              11 (131)
++             68 LOAD_CONST              12 (0)
++             70 LOAD_CONST              13 (5)
++             72 LOAD_CONST               6 (1)
++             74 LOAD_CONST               7 (False)
 +             76 CALL_FUNCTION            6
 +             78 POP_TOP
 +             80 UNPACK_SEQUENCE          1
@@ -2755,16 +2755,16 @@ Code Object: f
 +             86 DUP_TOP
 +             88 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             90 ROT_TWO
-+             92 LOAD_CONST              10 (131)
-+             94 LOAD_CONST              11 (0)
-+             96 LOAD_CONST              12 (5)
-+             98 LOAD_CONST               5 (1)
-+            100 LOAD_CONST               9 (True)
++             92 LOAD_CONST              11 (131)
++             94 LOAD_CONST              12 (0)
++             96 LOAD_CONST              13 (5)
++             98 LOAD_CONST               6 (1)
++            100 LOAD_CONST              10 (True)
 +            102 CALL_FUNCTION            6
 +            104 POP_TOP
 +            106 UNPACK_SEQUENCE          1
              108 POP_TOP
-             110 LOAD_CONST              13 (None)
+             110 LOAD_CONST               0 (None)
              112 RETURN_VALUE
 
 Code Object: g
@@ -2925,29 +2925,29 @@ Code Object: f
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (135)
-+             12 LOAD_CONST               1 ('cell')
-+             14 LOAD_CONST               2 ('i')
++             10 LOAD_CONST               1 (135)
++             12 LOAD_CONST               2 ('cell')
++             14 LOAD_CONST               3 ('i')
 +             16 BUILD_MAP                1
-+             18 LOAD_CONST               3 (0)
-+             20 LOAD_CONST               4 (1)
-+             22 LOAD_CONST               5 (True)
++             18 LOAD_CONST               4 (0)
++             20 LOAD_CONST               5 (1)
++             22 LOAD_CONST               6 (True)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
               30 BUILD_TUPLE              1
-~             32 LOAD_CONST               6 (<code object g at SOME ADDRESS, file "<string>", line 3>)
-              34 LOAD_CONST               7 ('f.<locals>.g')
+~             32 LOAD_CONST               7 (<code object g at SOME ADDRESS, file "<string>", line 3>)
+              34 LOAD_CONST               8 ('f.<locals>.g')
               36 MAKE_FUNCTION            8 (closure)
 +             38 BUILD_LIST               1
 +             40 DUP_TOP
 +             42 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             44 ROT_TWO
-+             46 LOAD_CONST               8 (125)
-+             48 LOAD_CONST               9 ('g')
-+             50 LOAD_CONST              10 (5)
-+             52 LOAD_CONST               4 (1)
-+             54 LOAD_CONST              11 (False)
++             46 LOAD_CONST               9 (125)
++             48 LOAD_CONST              10 ('g')
++             50 LOAD_CONST              11 (5)
++             52 LOAD_CONST               5 (1)
++             54 LOAD_CONST              12 (False)
 +             56 CALL_FUNCTION            6
 +             58 POP_TOP
 +             60 UNPACK_SEQUENCE          1
@@ -2957,11 +2957,11 @@ Code Object: f
 +             68 DUP_TOP
 +             70 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             72 ROT_TWO
-+             74 LOAD_CONST              12 (124)
-+             76 LOAD_CONST               9 ('g')
-+             78 LOAD_CONST              13 (6)
-+             80 LOAD_CONST               4 (1)
-+             82 LOAD_CONST               5 (True)
++             74 LOAD_CONST              13 (124)
++             76 LOAD_CONST              10 ('g')
++             78 LOAD_CONST              14 (6)
++             80 LOAD_CONST               5 (1)
++             82 LOAD_CONST               6 (True)
 +             84 CALL_FUNCTION            6
 +             86 POP_TOP
 +             88 UNPACK_SEQUENCE          1
@@ -2969,11 +2969,11 @@ Code Object: f
 +             92 DUP_TOP
 +             94 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             96 ROT_TWO
-+             98 LOAD_CONST              14 (131)
-+            100 LOAD_CONST               3 (0)
-+            102 LOAD_CONST              15 (7)
-+            104 LOAD_CONST               4 (1)
-+            106 LOAD_CONST              11 (False)
++             98 LOAD_CONST              15 (131)
++            100 LOAD_CONST               4 (0)
++            102 LOAD_CONST              16 (7)
++            104 LOAD_CONST               5 (1)
++            106 LOAD_CONST              12 (False)
 +            108 CALL_FUNCTION            6
 +            110 POP_TOP
 +            112 UNPACK_SEQUENCE          1
@@ -2982,16 +2982,16 @@ Code Object: f
 +            118 DUP_TOP
 +            120 LOAD_GLOBAL              0 (py_instrument_receiver)
 +            122 ROT_TWO
-+            124 LOAD_CONST              14 (131)
-+            126 LOAD_CONST               3 (0)
-+            128 LOAD_CONST              15 (7)
-+            130 LOAD_CONST               4 (1)
-+            132 LOAD_CONST               5 (True)
++            124 LOAD_CONST              15 (131)
++            126 LOAD_CONST               4 (0)
++            128 LOAD_CONST              16 (7)
++            130 LOAD_CONST               5 (1)
++            132 LOAD_CONST               6 (True)
 +            134 CALL_FUNCTION            6
 +            136 POP_TOP
 +            138 UNPACK_SEQUENCE          1
              140 POP_TOP
-             142 LOAD_CONST              16 (None)
+             142 LOAD_CONST               0 (None)
              144 RETURN_VALUE
 
 Code Object: g
@@ -3000,13 +3000,13 @@ Code Object: g
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (136)
-+             12 LOAD_CONST               1 ('free')
-+             14 LOAD_CONST               2 ('i')
++             10 LOAD_CONST               1 (136)
++             12 LOAD_CONST               2 ('free')
++             14 LOAD_CONST               3 ('i')
 +             16 BUILD_MAP                1
-+             18 LOAD_CONST               3 (0)
-+             20 LOAD_CONST               4 (2)
-+             22 LOAD_CONST               5 (True)
++             18 LOAD_CONST               4 (0)
++             20 LOAD_CONST               5 (2)
++             22 LOAD_CONST               6 (True)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
@@ -3128,16 +3128,16 @@ Code Object: <module>
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              1 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (101)
-+             12 LOAD_CONST               1 ('list')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               2 (0)
-+             18 LOAD_CONST               3 (True)
++             10 LOAD_CONST               1 (101)
++             12 LOAD_CONST               2 ('list')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               3 (0)
++             18 LOAD_CONST               4 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
               26 POP_TOP
-              28 LOAD_CONST               4 (None)
+              28 LOAD_CONST               0 (None)
               30 RETURN_VALUE
 '''
 
@@ -3370,15 +3370,15 @@ Code Object: <module>
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              1 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (101)
-+             12 LOAD_CONST               1 ('type')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               2 (0)
-+             18 LOAD_CONST               3 (True)
++             10 LOAD_CONST               1 (101)
++             12 LOAD_CONST               2 ('type')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               3 (0)
++             18 LOAD_CONST               4 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
-              26 LOAD_CONST               4 ('')
+              26 LOAD_CONST               0 ('')
               28 LOAD_CONST               5 (())
               30 BUILD_MAP                0
 +             32 BUILD_LIST               4
@@ -3388,7 +3388,7 @@ Code Object: <module>
 +             40 LOAD_CONST               6 (131)
 +             42 LOAD_CONST               7 (3)
 +             44 LOAD_CONST               8 (4)
-+             46 LOAD_CONST               2 (0)
++             46 LOAD_CONST               3 (0)
 +             48 LOAD_CONST               9 (False)
 +             50 CALL_FUNCTION            6
 +             52 POP_TOP
@@ -3404,8 +3404,8 @@ Code Object: <module>
 +             72 LOAD_CONST               6 (131)
 +             74 LOAD_CONST               7 (3)
 +             76 LOAD_CONST               8 (4)
-+             78 LOAD_CONST               2 (0)
-+             80 LOAD_CONST               3 (True)
++             78 LOAD_CONST               3 (0)
++             80 LOAD_CONST               4 (True)
 +             82 CALL_FUNCTION            6
 +             84 POP_TOP
 +             86 UNPACK_SEQUENCE          1
@@ -3414,9 +3414,9 @@ Code Object: <module>
 +             92 LOAD_GLOBAL              1 (py_instrument_receiver)
 +             94 ROT_TWO
 +             96 LOAD_CONST               6 (131)
-+             98 LOAD_CONST               2 (0)
++             98 LOAD_CONST               3 (0)
 +            100 LOAD_CONST              10 (5)
-+            102 LOAD_CONST               2 (0)
++            102 LOAD_CONST               3 (0)
 +            104 LOAD_CONST               9 (False)
 +            106 CALL_FUNCTION            6
 +            108 POP_TOP
@@ -3427,10 +3427,10 @@ Code Object: <module>
 +            118 LOAD_GLOBAL              1 (py_instrument_receiver)
 +            120 ROT_TWO
 +            122 LOAD_CONST               6 (131)
-+            124 LOAD_CONST               2 (0)
++            124 LOAD_CONST               3 (0)
 +            126 LOAD_CONST              10 (5)
-+            128 LOAD_CONST               2 (0)
-+            130 LOAD_CONST               3 (True)
++            128 LOAD_CONST               3 (0)
++            130 LOAD_CONST               4 (True)
 +            132 CALL_FUNCTION            6
 +            134 POP_TOP
 +            136 UNPACK_SEQUENCE          1
@@ -3441,7 +3441,7 @@ Code Object: <module>
 +            146 LOAD_CONST              11 (90)
 +            148 LOAD_CONST              12 ('x')
 +            150 LOAD_CONST              13 (6)
-+            152 LOAD_CONST               2 (0)
++            152 LOAD_CONST               3 (0)
 +            154 LOAD_CONST               9 (False)
 +            156 CALL_FUNCTION            6
 +            158 POP_TOP
@@ -3453,11 +3453,11 @@ Code Object: <module>
 +            170 DUP_TOP
 +            172 LOAD_GLOBAL              1 (py_instrument_receiver)
 +            174 ROT_TWO
-+            176 LOAD_CONST               0 (101)
++            176 LOAD_CONST               1 (101)
 +            178 LOAD_CONST              12 ('x')
 +            180 LOAD_CONST              15 (8)
-+            182 LOAD_CONST               2 (0)
-+            184 LOAD_CONST               3 (True)
++            182 LOAD_CONST               3 (0)
++            184 LOAD_CONST               4 (True)
 +            186 CALL_FUNCTION            6
 +            188 POP_TOP
 +            190 UNPACK_SEQUENCE          1
@@ -3468,7 +3468,7 @@ Code Object: <module>
 +            200 LOAD_CONST              16 (95)
 +            202 LOAD_CONST              17 ('a')
 +            204 LOAD_CONST              18 (9)
-+            206 LOAD_CONST               2 (0)
++            206 LOAD_CONST               3 (0)
 +            208 LOAD_CONST               9 (False)
 +            210 CALL_FUNCTION            6
 +            212 POP_TOP
@@ -4119,11 +4119,11 @@ Code Object: f
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (124)
-+             12 LOAD_CONST               1 ('x')
-+             14 LOAD_CONST               2 (0)
-+             16 LOAD_CONST               3 (1)
-+             18 LOAD_CONST               4 (True)
++             10 LOAD_CONST               1 (124)
++             12 LOAD_CONST               2 ('x')
++             14 LOAD_CONST               3 (0)
++             16 LOAD_CONST               4 (1)
++             18 LOAD_CONST               5 (True)
 +             20 CALL_FUNCTION            6
 +             22 POP_TOP
 +             24 UNPACK_SEQUENCE          1
@@ -4245,18 +4245,18 @@ Code Object: <module>
              112 RETURN_VALUE
 
 Code Object: f
-~  3           0 LOAD_CONST               0 (<code object g at SOME ADDRESS, file "<string>", line 3>)
-               2 LOAD_CONST               1 ('f.<locals>.g')
+~  3           0 LOAD_CONST               1 (<code object g at SOME ADDRESS, file "<string>", line 3>)
+               2 LOAD_CONST               2 ('f.<locals>.g')
                4 MAKE_FUNCTION            0
 +              6 BUILD_LIST               1
 +              8 DUP_TOP
 +             10 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             12 ROT_TWO
-+             14 LOAD_CONST               2 (125)
-+             16 LOAD_CONST               3 ('g')
-+             18 LOAD_CONST               4 (3)
-+             20 LOAD_CONST               5 (1)
-+             22 LOAD_CONST               6 (False)
++             14 LOAD_CONST               3 (125)
++             16 LOAD_CONST               4 ('g')
++             18 LOAD_CONST               5 (3)
++             20 LOAD_CONST               6 (1)
++             22 LOAD_CONST               7 (False)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
@@ -4266,11 +4266,11 @@ Code Object: f
 +             36 DUP_TOP
 +             38 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             40 ROT_TWO
-+             42 LOAD_CONST               7 (124)
-+             44 LOAD_CONST               3 ('g')
-+             46 LOAD_CONST               8 (4)
-+             48 LOAD_CONST               5 (1)
-+             50 LOAD_CONST               9 (True)
++             42 LOAD_CONST               8 (124)
++             44 LOAD_CONST               4 ('g')
++             46 LOAD_CONST               9 (4)
++             48 LOAD_CONST               6 (1)
++             50 LOAD_CONST              10 (True)
 +             52 CALL_FUNCTION            6
 +             54 POP_TOP
 +             56 UNPACK_SEQUENCE          1
@@ -4278,11 +4278,11 @@ Code Object: f
 +             60 DUP_TOP
 +             62 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             64 ROT_TWO
-+             66 LOAD_CONST              10 (131)
-+             68 LOAD_CONST              11 (0)
-+             70 LOAD_CONST              12 (5)
-+             72 LOAD_CONST               5 (1)
-+             74 LOAD_CONST               6 (False)
++             66 LOAD_CONST              11 (131)
++             68 LOAD_CONST              12 (0)
++             70 LOAD_CONST              13 (5)
++             72 LOAD_CONST               6 (1)
++             74 LOAD_CONST               7 (False)
 +             76 CALL_FUNCTION            6
 +             78 POP_TOP
 +             80 UNPACK_SEQUENCE          1
@@ -4291,16 +4291,16 @@ Code Object: f
 +             86 DUP_TOP
 +             88 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             90 ROT_TWO
-+             92 LOAD_CONST              10 (131)
-+             94 LOAD_CONST              11 (0)
-+             96 LOAD_CONST              12 (5)
-+             98 LOAD_CONST               5 (1)
-+            100 LOAD_CONST               9 (True)
++             92 LOAD_CONST              11 (131)
++             94 LOAD_CONST              12 (0)
++             96 LOAD_CONST              13 (5)
++             98 LOAD_CONST               6 (1)
++            100 LOAD_CONST              10 (True)
 +            102 CALL_FUNCTION            6
 +            104 POP_TOP
 +            106 UNPACK_SEQUENCE          1
              108 POP_TOP
-             110 LOAD_CONST              13 (None)
+             110 LOAD_CONST               0 (None)
              112 RETURN_VALUE
 
 Code Object: g
@@ -4461,29 +4461,29 @@ Code Object: f
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (135)
-+             12 LOAD_CONST               1 ('cell')
-+             14 LOAD_CONST               2 ('i')
++             10 LOAD_CONST               1 (135)
++             12 LOAD_CONST               2 ('cell')
++             14 LOAD_CONST               3 ('i')
 +             16 BUILD_MAP                1
-+             18 LOAD_CONST               3 (0)
-+             20 LOAD_CONST               4 (1)
-+             22 LOAD_CONST               5 (True)
++             18 LOAD_CONST               4 (0)
++             20 LOAD_CONST               5 (1)
++             22 LOAD_CONST               6 (True)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
               30 BUILD_TUPLE              1
-~             32 LOAD_CONST               6 (<code object g at SOME ADDRESS, file "<string>", line 3>)
-              34 LOAD_CONST               7 ('f.<locals>.g')
+~             32 LOAD_CONST               7 (<code object g at SOME ADDRESS, file "<string>", line 3>)
+              34 LOAD_CONST               8 ('f.<locals>.g')
               36 MAKE_FUNCTION            8 (closure)
 +             38 BUILD_LIST               1
 +             40 DUP_TOP
 +             42 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             44 ROT_TWO
-+             46 LOAD_CONST               8 (125)
-+             48 LOAD_CONST               9 ('g')
-+             50 LOAD_CONST              10 (5)
-+             52 LOAD_CONST               4 (1)
-+             54 LOAD_CONST              11 (False)
++             46 LOAD_CONST               9 (125)
++             48 LOAD_CONST              10 ('g')
++             50 LOAD_CONST              11 (5)
++             52 LOAD_CONST               5 (1)
++             54 LOAD_CONST              12 (False)
 +             56 CALL_FUNCTION            6
 +             58 POP_TOP
 +             60 UNPACK_SEQUENCE          1
@@ -4493,11 +4493,11 @@ Code Object: f
 +             68 DUP_TOP
 +             70 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             72 ROT_TWO
-+             74 LOAD_CONST              12 (124)
-+             76 LOAD_CONST               9 ('g')
-+             78 LOAD_CONST              13 (6)
-+             80 LOAD_CONST               4 (1)
-+             82 LOAD_CONST               5 (True)
++             74 LOAD_CONST              13 (124)
++             76 LOAD_CONST              10 ('g')
++             78 LOAD_CONST              14 (6)
++             80 LOAD_CONST               5 (1)
++             82 LOAD_CONST               6 (True)
 +             84 CALL_FUNCTION            6
 +             86 POP_TOP
 +             88 UNPACK_SEQUENCE          1
@@ -4505,11 +4505,11 @@ Code Object: f
 +             92 DUP_TOP
 +             94 LOAD_GLOBAL              0 (py_instrument_receiver)
 +             96 ROT_TWO
-+             98 LOAD_CONST              14 (131)
-+            100 LOAD_CONST               3 (0)
-+            102 LOAD_CONST              15 (7)
-+            104 LOAD_CONST               4 (1)
-+            106 LOAD_CONST              11 (False)
++             98 LOAD_CONST              15 (131)
++            100 LOAD_CONST               4 (0)
++            102 LOAD_CONST              16 (7)
++            104 LOAD_CONST               5 (1)
++            106 LOAD_CONST              12 (False)
 +            108 CALL_FUNCTION            6
 +            110 POP_TOP
 +            112 UNPACK_SEQUENCE          1
@@ -4518,16 +4518,16 @@ Code Object: f
 +            118 DUP_TOP
 +            120 LOAD_GLOBAL              0 (py_instrument_receiver)
 +            122 ROT_TWO
-+            124 LOAD_CONST              14 (131)
-+            126 LOAD_CONST               3 (0)
-+            128 LOAD_CONST              15 (7)
-+            130 LOAD_CONST               4 (1)
-+            132 LOAD_CONST               5 (True)
++            124 LOAD_CONST              15 (131)
++            126 LOAD_CONST               4 (0)
++            128 LOAD_CONST              16 (7)
++            130 LOAD_CONST               5 (1)
++            132 LOAD_CONST               6 (True)
 +            134 CALL_FUNCTION            6
 +            136 POP_TOP
 +            138 UNPACK_SEQUENCE          1
              140 POP_TOP
-             142 LOAD_CONST              16 (None)
+             142 LOAD_CONST               0 (None)
              144 RETURN_VALUE
 
 Code Object: g
@@ -4536,13 +4536,13 @@ Code Object: g
 +              4 DUP_TOP
 +              6 LOAD_GLOBAL              0 (py_instrument_receiver)
 +              8 ROT_TWO
-+             10 LOAD_CONST               0 (136)
-+             12 LOAD_CONST               1 ('free')
-+             14 LOAD_CONST               2 ('i')
++             10 LOAD_CONST               1 (136)
++             12 LOAD_CONST               2 ('free')
++             14 LOAD_CONST               3 ('i')
 +             16 BUILD_MAP                1
-+             18 LOAD_CONST               3 (0)
-+             20 LOAD_CONST               4 (2)
-+             22 LOAD_CONST               5 (True)
++             18 LOAD_CONST               4 (0)
++             20 LOAD_CONST               5 (2)
++             22 LOAD_CONST               6 (True)
 +             24 CALL_FUNCTION            6
 +             26 POP_TOP
 +             28 UNPACK_SEQUENCE          1
