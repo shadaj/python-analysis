@@ -1,6 +1,6 @@
 import sys
 from importlib.abc import MetaPathFinder, Loader
-from importlib.machinery import ModuleSpec, SourceFileLoader
+from importlib.machinery import ModuleSpec
 
 from .instrument_nested import extract_all_codeobjects, instrument_extracted
 
@@ -71,7 +71,7 @@ class Wrapper(object):
     print(attr)
     return getattr(self.wrappee, attr)
 
-modules_to_skip = []
+modules_to_skip: List[ModuleType] = []
 
 class PatchingPathFinder(MetaPathFinder):
   existing_importers: List[MetaPathFinder]
