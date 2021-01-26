@@ -27,6 +27,19 @@ Code Object: <module>
               30 RETURN_VALUE
 '''
 
+snapshots['test_load_name (2, 3, 7)'] = [
+    {
+        'arg': 'list',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 0,
+        'stack': [
+            GenericRepr("<class 'list'>")
+        ]
+    }
+]
+
 snapshots['test_store_name (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_CONST               0 (1)
@@ -46,6 +59,19 @@ Code Object: <module>
               28 LOAD_CONST               5 (None)
               30 RETURN_VALUE
 '''
+
+snapshots['test_store_name (2, 3, 7)'] = [
+    {
+        'arg': 'x',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 26,
+        'stack': [
+            1
+        ]
+    }
+]
 
 snapshots['test_load_attr (1, 3, 7)'] = '''
 Code Object: <module>
@@ -147,6 +173,81 @@ Code Object: <module>
              190 LOAD_CONST              15 (None)
              192 RETURN_VALUE
 '''
+
+snapshots['test_load_attr (2, 3, 7)'] = [
+    {
+        'arg': 'range',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 0,
+        'stack': [
+            GenericRepr("<class 'range'>")
+        ]
+    },
+    {
+        'arg': 2,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 60,
+        'stack': [
+            GenericRepr("<class 'range'>"),
+            0,
+            5
+        ]
+    },
+    {
+        'arg': 2,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 60,
+        'stack': [
+            GenericRepr('range(0, 5)')
+        ]
+    },
+    {
+        'arg': 'x',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 110,
+        'stack': [
+            GenericRepr('range(0, 5)')
+        ]
+    },
+    {
+        'arg': 'x',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 112,
+        'stack': [
+            GenericRepr('range(0, 5)')
+        ]
+    },
+    {
+        'arg': 'start',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'LOAD_ATTR',
+        'orig_op': 162,
+        'stack': [
+            GenericRepr('range(0, 5)')
+        ]
+    },
+    {
+        'arg': 'start',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_ATTR',
+        'orig_op': 162,
+        'stack': [
+            0
+        ]
+    }
+]
 
 snapshots['test_store_attr (1, 3, 7)'] = '''
 Code Object: <module>
@@ -266,6 +367,95 @@ Code Object: <module>
              226 RETURN_VALUE
 '''
 
+snapshots['test_store_attr (2, 3, 7)'] = [
+    {
+        'arg': 'type',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 0,
+        'stack': [
+            GenericRepr("<class 'type'>")
+        ]
+    },
+    {
+        'arg': 3,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 62,
+        'stack': [
+            GenericRepr("<class 'type'>"),
+            '',
+            (
+            ),
+            {
+            }
+        ]
+    },
+    {
+        'arg': 3,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 62,
+        'stack': [
+            GenericRepr("<class ''>")
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 112,
+        'stack': [
+            GenericRepr("<class ''>")
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 112,
+        'stack': [
+            GenericRepr('< object at 0x100000000>')
+        ]
+    },
+    {
+        'arg': 'x',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 162,
+        'stack': [
+            GenericRepr('< object at 0x100000000>')
+        ]
+    },
+    {
+        'arg': 'x',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 166,
+        'stack': [
+            GenericRepr('< object at 0x100000000>')
+        ]
+    },
+    {
+        'arg': 'a',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_ATTR',
+        'orig_op': 222,
+        'stack': [
+            1,
+            GenericRepr('< object at 0x100000000>')
+        ]
+    }
+]
+
 snapshots['test_store_then_load (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_CONST               0 (1)
@@ -299,6 +489,29 @@ Code Object: <module>
               56 LOAD_CONST               8 (None)
               58 RETURN_VALUE
 '''
+
+snapshots['test_store_then_load (2, 3, 7)'] = [
+    {
+        'arg': 'x',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 26,
+        'stack': [
+            1
+        ]
+    },
+    {
+        'arg': 'x',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 28,
+        'stack': [
+            1
+        ]
+    }
+]
 
 snapshots['test_list_load (1, 3, 7)'] = '''
 Code Object: <module>
@@ -366,6 +579,62 @@ Code Object: <module>
              122 RETURN_VALUE
 '''
 
+snapshots['test_list_load (2, 3, 7)'] = [
+    {
+        'arg': 'arr',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 32,
+        'stack': [
+            [
+                1,
+                2,
+                3
+            ]
+        ]
+    },
+    {
+        'arg': 'arr',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 34,
+        'stack': [
+            [
+                1,
+                2,
+                3
+            ]
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'BINARY_SUBSCR',
+        'orig_op': 92,
+        'stack': [
+            [
+                1,
+                2,
+                3
+            ],
+            1
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'BINARY_SUBSCR',
+        'orig_op': 92,
+        'stack': [
+            2
+        ]
+    }
+]
+
 snapshots['test_list_store (1, 3, 7)'] = '''
 Code Object: <module>
    2           0 LOAD_CONST               0 (1)
@@ -419,6 +688,53 @@ Code Object: <module>
               96 LOAD_CONST              12 (None)
               98 RETURN_VALUE
 '''
+
+snapshots['test_list_store (2, 3, 7)'] = [
+    {
+        'arg': 'arr',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 32,
+        'stack': [
+            [
+                1,
+                2,
+                3
+            ]
+        ]
+    },
+    {
+        'arg': 'arr',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 36,
+        'stack': [
+            [
+                1,
+                2,
+                3
+            ]
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_SUBSCR',
+        'orig_op': 94,
+        'stack': [
+            2,
+            [
+                1,
+                2,
+                3
+            ],
+            1
+        ]
+    }
+]
 
 snapshots['test_for_loop (1, 3, 7)'] = '''
 Code Object: <module>
@@ -489,6 +805,68 @@ Code Object: <module>
              128 RETURN_VALUE
 '''
 
+snapshots['test_for_loop (2, 3, 7)'] = [
+    {
+        'arg': {
+            'label': 126
+        },
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'SETUP_LOOP',
+        'orig_op': 22,
+        'stack': [
+        ]
+    },
+    {
+        'arrive_at': 50
+    },
+    {
+        'arg': 'i',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 76,
+        'stack': [
+            1
+        ]
+    },
+    {
+        'arrive_at': 50
+    },
+    {
+        'arg': 'i',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 76,
+        'stack': [
+            2
+        ]
+    },
+    {
+        'arrive_at': 50
+    },
+    {
+        'arg': 'i',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 76,
+        'stack': [
+            3
+        ]
+    },
+    {
+        'arrive_at': 50
+    },
+    {
+        'arrive_at': 102
+    },
+    {
+        'arrive_at': 126
+    }
+]
+
 snapshots['test_function_call (1, 3, 7)'] = '''
 Code Object: <module>
 ~  2           0 LOAD_CONST               0 (<code object f at SOME ADDRESS, file "<string>", line 2>)
@@ -553,6 +931,49 @@ Code Object: f
    3           0 LOAD_CONST               0 (None)
                2 RETURN_VALUE
 '''
+
+snapshots['test_function_call (2, 3, 7)'] = [
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 30,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 32,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 82,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 82,
+        'stack': [
+            None
+        ]
+    }
+]
 
 snapshots['test_function_call_with_args (1, 3, 7)'] = '''
 Code Object: <module>
@@ -634,6 +1055,60 @@ Code Object: f
 +             24 UNPACK_SEQUENCE          1
               26 RETURN_VALUE
 '''
+
+snapshots['test_function_call_with_args (2, 3, 7)'] = [
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 30,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 32,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 1,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 90,
+        'stack': [
+            '<function f at SOME ADDRESS>',
+            1
+        ]
+    },
+    {
+        'arg': 'x',
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_FAST',
+        'orig_op': 0,
+        'stack': [
+            1
+        ]
+    },
+    {
+        'arg': 1,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 90,
+        'stack': [
+            1
+        ]
+    }
+]
 
 snapshots['test_inner_function (1, 3, 7)'] = '''
 Code Object: <module>
@@ -758,6 +1233,89 @@ Code Object: g
    4           0 LOAD_CONST               0 (None)
                2 RETURN_VALUE
 '''
+
+snapshots['test_inner_function (2, 3, 7)'] = [
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 30,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 32,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 82,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'g',
+        'code': 'f',
+        'is_post': False,
+        'opcode': 'STORE_FAST',
+        'orig_op': 30,
+        'stack': [
+            '<function f.<locals>.g at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'g',
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_FAST',
+        'orig_op': 32,
+        'stack': [
+            '<function f.<locals>.g at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': 'f',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 82,
+        'stack': [
+            '<function f.<locals>.g at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 82,
+        'stack': [
+            None
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 82,
+        'stack': [
+            None
+        ]
+    }
+]
 
 snapshots['test_inner_function_nonlocal_ref (1, 3, 7)'] = '''
 Code Object: <module>
@@ -917,564 +1475,6 @@ Code Object: g
               30 RETURN_VALUE
 '''
 
-snapshots['test_load_name (2, 3, 7)'] = [
-    {
-        'arg': 'list',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 0,
-        'stack': [
-            GenericRepr("<class 'list'>")
-        ]
-    }
-]
-
-snapshots['test_store_name (2, 3, 7)'] = [
-    {
-        'arg': 'x',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 26,
-        'stack': [
-            1
-        ]
-    }
-]
-
-snapshots['test_load_attr (2, 3, 7)'] = [
-    {
-        'arg': 'range',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 0,
-        'stack': [
-            GenericRepr("<class 'range'>")
-        ]
-    },
-    {
-        'arg': 2,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 60,
-        'stack': [
-            GenericRepr("<class 'range'>"),
-            0,
-            5
-        ]
-    },
-    {
-        'arg': 2,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 60,
-        'stack': [
-            GenericRepr('range(0, 5)')
-        ]
-    },
-    {
-        'arg': 'x',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 110,
-        'stack': [
-            GenericRepr('range(0, 5)')
-        ]
-    },
-    {
-        'arg': 'x',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 112,
-        'stack': [
-            GenericRepr('range(0, 5)')
-        ]
-    },
-    {
-        'arg': 'start',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'LOAD_ATTR',
-        'orig_op': 162,
-        'stack': [
-            GenericRepr('range(0, 5)')
-        ]
-    },
-    {
-        'arg': 'start',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_ATTR',
-        'orig_op': 162,
-        'stack': [
-            0
-        ]
-    }
-]
-
-snapshots['test_store_attr (2, 3, 7)'] = [
-    {
-        'arg': 'type',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 0,
-        'stack': [
-            GenericRepr("<class 'type'>")
-        ]
-    },
-    {
-        'arg': 3,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 62,
-        'stack': [
-            GenericRepr("<class 'type'>"),
-            '',
-            (
-            ),
-            {
-            }
-        ]
-    },
-    {
-        'arg': 3,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 62,
-        'stack': [
-            GenericRepr("<class ''>")
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 112,
-        'stack': [
-            GenericRepr("<class ''>")
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 112,
-        'stack': [
-            GenericRepr('< object at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'x',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 162,
-        'stack': [
-            GenericRepr('< object at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'x',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 166,
-        'stack': [
-            GenericRepr('< object at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'a',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_ATTR',
-        'orig_op': 222,
-        'stack': [
-            1,
-            GenericRepr('< object at 0x100000000>')
-        ]
-    }
-]
-
-snapshots['test_store_then_load (2, 3, 7)'] = [
-    {
-        'arg': 'x',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 26,
-        'stack': [
-            1
-        ]
-    },
-    {
-        'arg': 'x',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 28,
-        'stack': [
-            1
-        ]
-    }
-]
-
-snapshots['test_list_load (2, 3, 7)'] = [
-    {
-        'arg': 'arr',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 32,
-        'stack': [
-            [
-                1,
-                2,
-                3
-            ]
-        ]
-    },
-    {
-        'arg': 'arr',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 34,
-        'stack': [
-            [
-                1,
-                2,
-                3
-            ]
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'BINARY_SUBSCR',
-        'orig_op': 92,
-        'stack': [
-            [
-                1,
-                2,
-                3
-            ],
-            1
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'BINARY_SUBSCR',
-        'orig_op': 92,
-        'stack': [
-            2
-        ]
-    }
-]
-
-snapshots['test_list_store (2, 3, 7)'] = [
-    {
-        'arg': 'arr',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 32,
-        'stack': [
-            [
-                1,
-                2,
-                3
-            ]
-        ]
-    },
-    {
-        'arg': 'arr',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 36,
-        'stack': [
-            [
-                1,
-                2,
-                3
-            ]
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_SUBSCR',
-        'orig_op': 94,
-        'stack': [
-            2,
-            [
-                1,
-                2,
-                3
-            ],
-            1
-        ]
-    }
-]
-
-snapshots['test_for_loop (2, 3, 7)'] = [
-    {
-        'arg': {
-            'label': 126
-        },
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'SETUP_LOOP',
-        'orig_op': 22,
-        'stack': [
-        ]
-    },
-    {
-        'arrive_at': 50
-    },
-    {
-        'arg': 'i',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 76,
-        'stack': [
-            1
-        ]
-    },
-    {
-        'arrive_at': 50
-    },
-    {
-        'arg': 'i',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 76,
-        'stack': [
-            2
-        ]
-    },
-    {
-        'arrive_at': 50
-    },
-    {
-        'arg': 'i',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 76,
-        'stack': [
-            3
-        ]
-    },
-    {
-        'arrive_at': 50
-    },
-    {
-        'arrive_at': 102
-    },
-    {
-        'arrive_at': 126
-    }
-]
-
-snapshots['test_function_call (2, 3, 7)'] = [
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 30,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 32,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 82,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 82,
-        'stack': [
-            None
-        ]
-    }
-]
-
-snapshots['test_function_call_with_args (2, 3, 7)'] = [
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 30,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 32,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 1,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 90,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>'),
-            1
-        ]
-    },
-    {
-        'arg': 'x',
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_FAST',
-        'orig_op': 0,
-        'stack': [
-            1
-        ]
-    },
-    {
-        'arg': 1,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 90,
-        'stack': [
-            1
-        ]
-    }
-]
-
-snapshots['test_inner_function (2, 3, 7)'] = [
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 30,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 32,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 82,
-        'stack': [
-            GenericRepr('<function f at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'g',
-        'code': 'f',
-        'is_post': False,
-        'opcode': 'STORE_FAST',
-        'orig_op': 30,
-        'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 'g',
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_FAST',
-        'orig_op': 32,
-        'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 0,
-        'code': 'f',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 82,
-        'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
-        ]
-    },
-    {
-        'arg': 0,
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 82,
-        'stack': [
-            None
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 82,
-        'stack': [
-            None
-        ]
-    }
-]
-
 snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
     {
         'arg': 'f',
@@ -1483,7 +1483,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -1493,7 +1493,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -1503,7 +1503,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 90,
         'stack': [
-            GenericRepr('<function f at 0x100000000>'),
+            '<function f at SOME ADDRESS>',
             1
         ]
     },
@@ -1526,7 +1526,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
         'opcode': 'STORE_FAST',
         'orig_op': 62,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -1536,7 +1536,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
         'opcode': 'LOAD_FAST',
         'orig_op': 64,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -1546,7 +1546,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 114,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -2478,7 +2478,7 @@ snapshots['test_function_call (2, 3, 8)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2488,7 +2488,7 @@ snapshots['test_function_call (2, 3, 8)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2498,7 +2498,7 @@ snapshots['test_function_call (2, 3, 8)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 82,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2602,7 +2602,7 @@ snapshots['test_function_call_with_args (2, 3, 8)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2612,7 +2612,7 @@ snapshots['test_function_call_with_args (2, 3, 8)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2622,7 +2622,7 @@ snapshots['test_function_call_with_args (2, 3, 8)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 90,
         'stack': [
-            GenericRepr('<function f at 0x100000000>'),
+            '<function f at SOME ADDRESS>',
             1
         ]
     },
@@ -2780,7 +2780,7 @@ snapshots['test_inner_function (2, 3, 8)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2790,7 +2790,7 @@ snapshots['test_inner_function (2, 3, 8)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2800,7 +2800,7 @@ snapshots['test_inner_function (2, 3, 8)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 82,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -2810,7 +2810,7 @@ snapshots['test_inner_function (2, 3, 8)'] = [
         'opcode': 'STORE_FAST',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -2820,7 +2820,7 @@ snapshots['test_inner_function (2, 3, 8)'] = [
         'opcode': 'LOAD_FAST',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -2830,7 +2830,7 @@ snapshots['test_inner_function (2, 3, 8)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 82,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -3021,7 +3021,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 8)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -3031,7 +3031,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 8)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -3041,7 +3041,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 8)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 90,
         'stack': [
-            GenericRepr('<function f at 0x100000000>'),
+            '<function f at SOME ADDRESS>',
             1
         ]
     },
@@ -3064,7 +3064,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 8)'] = [
         'opcode': 'STORE_FAST',
         'orig_op': 62,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -3074,7 +3074,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 8)'] = [
         'opcode': 'LOAD_FAST',
         'orig_op': 64,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -3084,7 +3084,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 8)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 114,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -4014,7 +4014,7 @@ snapshots['test_function_call (2, 3, 9)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4024,7 +4024,7 @@ snapshots['test_function_call (2, 3, 9)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4034,7 +4034,7 @@ snapshots['test_function_call (2, 3, 9)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 82,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4138,7 +4138,7 @@ snapshots['test_function_call_with_args (2, 3, 9)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4148,7 +4148,7 @@ snapshots['test_function_call_with_args (2, 3, 9)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4158,7 +4158,7 @@ snapshots['test_function_call_with_args (2, 3, 9)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 90,
         'stack': [
-            GenericRepr('<function f at 0x100000000>'),
+            '<function f at SOME ADDRESS>',
             1
         ]
     },
@@ -4316,7 +4316,7 @@ snapshots['test_inner_function (2, 3, 9)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4326,7 +4326,7 @@ snapshots['test_inner_function (2, 3, 9)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4336,7 +4336,7 @@ snapshots['test_inner_function (2, 3, 9)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 82,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4346,7 +4346,7 @@ snapshots['test_inner_function (2, 3, 9)'] = [
         'opcode': 'STORE_FAST',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -4356,7 +4356,7 @@ snapshots['test_inner_function (2, 3, 9)'] = [
         'opcode': 'LOAD_FAST',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -4366,7 +4366,7 @@ snapshots['test_inner_function (2, 3, 9)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 82,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -4557,7 +4557,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 9)'] = [
         'opcode': 'STORE_NAME',
         'orig_op': 30,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4567,7 +4567,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 9)'] = [
         'opcode': 'LOAD_NAME',
         'orig_op': 32,
         'stack': [
-            GenericRepr('<function f at 0x100000000>')
+            '<function f at SOME ADDRESS>'
         ]
     },
     {
@@ -4577,7 +4577,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 9)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 90,
         'stack': [
-            GenericRepr('<function f at 0x100000000>'),
+            '<function f at SOME ADDRESS>',
             1
         ]
     },
@@ -4600,7 +4600,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 9)'] = [
         'opcode': 'STORE_FAST',
         'orig_op': 62,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -4610,7 +4610,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 9)'] = [
         'opcode': 'LOAD_FAST',
         'orig_op': 64,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
@@ -4620,7 +4620,7 @@ snapshots['test_inner_function_nonlocal_ref (2, 3, 9)'] = [
         'opcode': 'CALL_FUNCTION',
         'orig_op': 114,
         'stack': [
-            GenericRepr('<function f.<locals>.g at 0x100000000>')
+            '<function f.<locals>.g at SOME ADDRESS>'
         ]
     },
     {
