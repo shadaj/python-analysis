@@ -1,4 +1,5 @@
 import re
+import sys
 from types import ModuleType
 
 from dis import opname
@@ -60,6 +61,7 @@ def test_calls_to_numpy_function(snapshot):
 
   np.linalg.eigvals(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
 
-  snapshot.assert_match(log)
+  snapshot.assert_match(log, name=str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor)))
+  snapshot.snapshot_counter += 1
   remove_receiver()
   patcher.uninstall()
