@@ -8,6 +8,16 @@ from textwrap import dedent
 import re
 import sys
 
+def clean_stack_addresses(elem):
+  if type(elem).__name__ == "cell" or type(elem).__name__ == "function": # CellType only in Python 3.8
+    return re.sub(
+      "0x[a-zA-Z0-9]+",
+      "SOME ADDRESS",
+      str(elem)
+    )
+  else:
+    return elem
+
 def source_test(snapshot, source):
   root_codeobject = compile(source, "<string>", "exec")
   [id_to_bytecode, code_to_id] = extract_all_codeobjects(root_codeobject)
@@ -27,16 +37,6 @@ def source_test(snapshot, source):
 
   snapshot.assert_match(diff_string, name=str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor)))
   snapshot.snapshot_counter += 1
-
-  def clean_stack_addresses(elem):
-    if type(elem).__name__ == "cell": # CellType only in Python 3.8
-      return re.sub(
-        "0x[a-zA-Z0-9]+",
-        "SOME ADDRESS",
-        str(elem)
-      )
-    else:
-      return elem
 
   events = []
   def event_receiver(stack, opcode, arg, opindex, code_id, is_post):

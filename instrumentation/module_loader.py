@@ -3,12 +3,17 @@ from importlib.abc import MetaPathFinder, Loader
 from importlib.machinery import ModuleSpec, SourceFileLoader
 
 from .instrument_nested import extract_all_codeobjects, instrument_extracted
-from .stack_tracking_receiver import StackTrackingReceiver
 
 from typing import List, Optional, Sequence, Union
 from types import ModuleType
 
 _Path = Union[bytes, str]
+
+_active_receivers = []
+
+def add_receiver(receiver):
+  _active_receivers.append(receiver)
+  return lambda: _active_receivers.remove(receiver)
 
 class PatchingLoader(SourceFileLoader):
   existing_loader: Loader
@@ -28,8 +33,12 @@ class PatchingLoader(SourceFileLoader):
 
     instrumented = id_to_bytecode_new_codeobjects[code_to_id[module_code]]
 
+    def common_receiver(stack, opcode, arg, opindex, code_id, is_post):
+      for receiver in _active_receivers:
+        receiver(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
+
     # TODO(shadaj): use an immutable overlay instead
-    module.__dict__["py_instrument_receiver"] = StackTrackingReceiver(id_to_bytecode)
+    module.__dict__["py_instrument_receiver"] = common_receiver
     exec(instrumented.to_code(), module.__dict__)
 
     return
@@ -42,7 +51,10 @@ class PatchingPathFinder(MetaPathFinder):
     self.existing_importers = sys.meta_path.copy()
 
   def install(self):
-    sys.meta_path.insert(-1, self)
+    sys.meta_path.insert(0, self)
+
+  def uninstall(self):
+    sys.meta_path.remove(self)
 
   def find_module(self, fullname: str, path: Optional[Sequence[_Path]]) -> Optional[Loader]:
     path_to_module = None
