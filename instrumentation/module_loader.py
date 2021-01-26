@@ -63,14 +63,6 @@ class PatchingLoader(Loader):
     else:
       self.existing_loader.exec_module(module)
 
-class Wrapper(object):
-  def __init__(self, wrappee):
-    self.wrappee = wrappee
-
-  def __getattr__(self, attr):
-    print(attr)
-    return getattr(self.wrappee, attr)
-
 modules_to_skip: List[ModuleType] = []
 
 class PatchingPathFinder(MetaPathFinder):
