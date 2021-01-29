@@ -5,36 +5,7 @@ from test.util import diff_bytecodes
 
 from instrumentation.stack_tracking_receiver import StackTrackingReceiver
 
-from instrumentation.instrument_nested import extract_all_codeobjects, instrument_extracted
-
-def run_with_handler(code, handler):
-  exec(code, {
-    "py_instrument_receiver": handler
-  })
-
-def instrument_and_exec(source):
-  root_codeobject = compile(source, "<string>", "exec")
-  [id_to_bytecode, code_to_id] = extract_all_codeobjects(root_codeobject)
-  id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id)
-
-  instrumented = id_to_bytecode_new_codeobjects[code_to_id[root_codeobject]]
-  orig_bytecode = Bytecode.from_code(compile(source, "<string>", "exec"))
-
-  for code_id in id_to_bytecode.keys():
-    print(id_to_bytecode[code_id].name)
-    print(diff_bytecodes(id_to_bytecode[code_id], id_to_bytecode_new_codeobjects[code_id])[0])
-
-  print()
-
-  print("For label reference:")
-  for orig_bytecode in id_to_bytecode.values():
-    dump_bytecode(orig_bytecode, lineno=True)
-
-  receiver = StackTrackingReceiver()
-  def handler(stack, opcode, arg, opindex, code_id, is_post):
-    receiver.on_event(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
-
-  run_with_handler(instrumented.to_code(), handler)
+from instrumentation.exec import exec_instrumented
 
 if __name__ == '__main__':
   # source = dedent(
@@ -103,4 +74,5 @@ if __name__ == '__main__':
     """
   )
 
-  instrument_and_exec(source)
+  with StackTrackingReceiver():
+    exec_instrumented(source)
