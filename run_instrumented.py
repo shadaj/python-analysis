@@ -30,7 +30,11 @@ def instrument_and_exec(source):
   for orig_bytecode in id_to_bytecode.values():
     dump_bytecode(orig_bytecode, lineno=True)
 
-  run_with_handler(instrumented.to_code(), StackTrackingReceiver(id_to_bytecode))
+  receiver = StackTrackingReceiver()
+  def handler(stack, opcode, arg, opindex, code_id, is_post):
+    receiver.on_event(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
+
+  run_with_handler(instrumented.to_code(), handler)
 
 if __name__ == '__main__':
   # source = dedent(
@@ -71,7 +75,7 @@ if __name__ == '__main__':
 
   source = dedent(
     """
-    x = 1
+    x = 1 # global so won't show up in trace because we don't instrument globals yet
     y = 2
     z = 3
 

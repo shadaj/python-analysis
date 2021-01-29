@@ -1,19 +1,15 @@
 import sys
 from importlib.abc import MetaPathFinder, Loader
 from importlib.machinery import ModuleSpec
-
-from .instrument_nested import extract_all_codeobjects, instrument_extracted
-
-from typing import List, Optional, Sequence, Union
 from types import ModuleType
 
+from .instrument_nested import extract_all_codeobjects, instrument_extracted
+from .event_receiver import call_all_receivers
+
+from typing import Any, List, Optional, Sequence, Union
+from typing_extensions import Literal
+
 _Path = Union[bytes, str]
-
-_active_receivers = []
-
-def add_receiver(receiver):
-  _active_receivers.append(receiver)
-  return lambda: _active_receivers.remove(receiver)
 
 class PatchingLoader(Loader):
   name: str
@@ -50,9 +46,8 @@ class PatchingLoader(Loader):
 
         instrumented = id_to_bytecode_new_codeobjects[code_to_id[module_code]]
 
-        def common_receiver(stack, opcode, arg, opindex, code_id, is_post):
-          for receiver in _active_receivers:
-            receiver(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
+        def common_receiver(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool):
+          call_all_receivers(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
 
         # TODO(shadaj): use an immutable overlay instead
         module.__dict__["py_instrument_receiver"] = common_receiver
