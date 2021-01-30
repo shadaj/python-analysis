@@ -1,5 +1,4 @@
 from instrumentation.instrument_nested import extract_all_codeobjects, instrument_extracted
-from run_instrumented import run_with_handler
 from .util import diff_bytecodes
 
 from dis import opname
@@ -52,7 +51,9 @@ def source_test(snapshot, source):
         "is_post": is_post
       })
 
-  run_with_handler(id_to_bytecode_new_codeobjects[code_to_id[root_codeobject]].to_code(), event_receiver)
+  exec(id_to_bytecode_new_codeobjects[code_to_id[root_codeobject]].to_code(), {
+    "py_instrument_receiver": event_receiver
+  })
 
   snapshot.assert_match(events, name=(str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor))))
   snapshot.snapshot_counter += 1

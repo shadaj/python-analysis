@@ -4,7 +4,10 @@ from types import ModuleType
 
 from dis import opname
 
-from instrumentation.module_loader import PatchingPathFinder, add_receiver
+from instrumentation.module_loader import PatchingPathFinder
+from instrumentation.event_receiver import EventReceiver
+
+from typing import List
 
 def cleanup_elem(e):
   if isinstance(e, ModuleType):
@@ -16,38 +19,37 @@ def cleanup_elem(e):
       str(e)
     )
 
-def logging_receiver():
-  log = []
+class LoggingReceiver(EventReceiver):
+  log: List[object]
   is_in_receiver = False
-  def receiver(stack, opcode, arg, opindex, code_id, is_post, id_to_orig_bytecode):
-    nonlocal is_in_receiver
-    if is_in_receiver:
+
+  def __init__(self) -> None:
+    self.log = []
+    super().__init__()
+
+  def on_event(self, stack, opcode, arg, opindex, code_id, is_post, id_to_orig_bytecode):
+    if self.is_in_receiver:
       return # stringifying can result in recursion
-    is_in_receiver = True
+    self.is_in_receiver = True
     if opcode == "JUMP_TARGET":
-      log.append({ "arrive_at": arg["label"] })
+      self.log.append({ "arrive_at": arg["label"] })
     else:
-      log.append({
+      self.log.append({
         "stack": list(map(cleanup_elem, stack)),
         "opcode": opcode if isinstance(opcode, str) else opname[opcode],
         "arg": arg,
         "is_post": is_post
       })
-    is_in_receiver = False
-
-  return receiver, log
+    self.is_in_receiver = False
 
 def test_calls_to_module_function(snapshot):
   patcher = PatchingPathFinder()
   patcher.install()
-  receiver, log = logging_receiver()
-  remove_receiver = add_receiver(receiver)
-
-  from .simple_module_to_import import hello
-  hello()
-
-  snapshot.assert_match(log)
-  remove_receiver()
+  logger = LoggingReceiver()
+  with logger:
+    from .simple_module_to_import import hello
+    hello()
+  snapshot.assert_match(logger.log)
   patcher.uninstall()
 
 def test_calls_to_numpy_function(snapshot):
@@ -56,12 +58,9 @@ def test_calls_to_numpy_function(snapshot):
 
   import numpy as np
 
-  receiver, log = logging_receiver()
-  remove_receiver = add_receiver(receiver)
-
-  np.linalg.eigvals(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
-
-  snapshot.assert_match(log, name=str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor)))
+  logger = LoggingReceiver()
+  with logger:
+    np.linalg.eigvals(np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]))
+  snapshot.assert_match(logger.log, name=str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor)))
   snapshot.snapshot_counter += 1
-  remove_receiver()
   patcher.uninstall()

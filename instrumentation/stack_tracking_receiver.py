@@ -1,37 +1,49 @@
 from dis import opname
+from types import FrameType
+from bytecode import Bytecode
 import inspect
 
+from .event_receiver import EventReceiver
 from .heap_object_tracking import HeapObjectTracker
+
+from typing import Any, Dict, List, Union
+from typing_extensions import Literal
 
 # newtype to track object IDs
 class ObjectId(object):
   def __init__(self, id):
     self.id = id
 
-class StackTrackingReceiver(object):
+def get_instrumented_program_frame():
+  for frame_container in inspect.getouterframes(inspect.currentframe()):
+    if frame_container.filename == "<string>":
+      return frame_container.frame
+
+class StackTrackingReceiver(EventReceiver):
   def __init__(self):
     self.loop_stack = []
     self.function_call_stack = []
     self.heap_object_tracking = HeapObjectTracker()
     self.frame_tracking = HeapObjectTracker()
     self.cell_to_frame = {}
+    super().__init__()
 
-  def show_op_index(self, code_id, op_index, id_to_orig_bytecode):
+  def show_op_index(self, code_id: int, op_index: int, id_to_orig_bytecode: Dict[int, Bytecode]):
     return "op #" + str(op_index) + " (" + str(id_to_orig_bytecode[code_id][op_index]) + ")"
 
-  def stringify_maybe_object_id(self, maybe_id):
+  def stringify_maybe_object_id(self, maybe_id: Union[int, ObjectId]):
     if isinstance(maybe_id, ObjectId):
       return "obj #" + str(maybe_id.id) + " (" + str(self.heap_object_tracking.get_by_id(maybe_id.id)) + ")"
     else:
       return str(maybe_id)
 
-  def stringify_frame_id(self, frame_id):
+  def stringify_frame_id(self, frame_id: int):
     return "frame #" + str(frame_id)# + " (" + str(self.frame_tracking.get_by_id(frame_id)) + ")"
 
   def print_stack_indent(self):
     print("\t" * (len(self.loop_stack) + len(self.function_call_stack)), end="")
 
-  def handle_jump_target(self, code_id, target_op_index, id_to_orig_bytecode):
+  def handle_jump_target(self, code_id: int, target_op_index: int, id_to_orig_bytecode: Dict[int, Bytecode]):
     if target_op_index in self.loop_stack:
       while self.loop_stack[-1] != target_op_index:
         del self.loop_stack[-1]
@@ -53,9 +65,9 @@ class StackTrackingReceiver(object):
 
     return object_id_stack
 
-  def get_var_reference_frame(self, cur_frame, arg):
+  def get_var_reference_frame(self, cur_frame: FrameType, arg):
     if "cell" in arg:
-      return self.frame_tracking.get_object_id(cur_frame.frame)
+      return self.frame_tracking.get_object_id(cur_frame)
     else:
       fn_object = self.heap_object_tracking.get_by_id(self.function_call_stack[-1].id)
       cell_vars = fn_object.__code__.co_cellvars
@@ -64,7 +76,7 @@ class StackTrackingReceiver(object):
       cell = fn_object.__closure__[var_index]
       return self.cell_to_frame[self.heap_object_tracking.get_object_id(cell)]
 
-  def __call__(self, stack, opcode, arg, opindex, code_id, is_post, id_to_orig_bytecode):
+  def on_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]):
     if opcode == "JUMP_TARGET":
       self.handle_jump_target(code_id, arg["label"], id_to_orig_bytecode)
     elif opname[opcode] == "CALL_FUNCTION" and not is_post:
@@ -108,7 +120,7 @@ class StackTrackingReceiver(object):
         print(
           "load", arg,
           "from", self.stringify_frame_id(self.frame_tracking.get_object_id(
-            inspect.getouterframes(inspect.currentframe())[1].frame
+            get_instrumented_program_frame()
           )),
           "->", self.stringify_maybe_object_id(object_id_stack[0])
         )
@@ -117,7 +129,7 @@ class StackTrackingReceiver(object):
         print(
           "store", arg,
           "in", self.stringify_frame_id(self.frame_tracking.get_object_id(
-            inspect.getouterframes(inspect.currentframe())[1].frame
+            get_instrumented_program_frame()
           )),
           "=", self.stringify_maybe_object_id(object_id_stack[0])
         )
@@ -133,9 +145,9 @@ class StackTrackingReceiver(object):
         print("begin loop", id_to_orig_bytecode[code_id][opindex])
         self.loop_stack.append(arg["label"])
       elif opname[opcode] == "LOAD_CLOSURE":
-        cur_frame = inspect.getouterframes(inspect.currentframe())[1]
+        cur_frame = get_instrumented_program_frame()
         if not object_id_stack[0].id in self.cell_to_frame:
-          self.cell_to_frame[object_id_stack[0].id] = self.frame_tracking.get_object_id(cur_frame.frame)
+          self.cell_to_frame[object_id_stack[0].id] = self.frame_tracking.get_object_id(cur_frame)
           self.print_stack_indent()
           print(
             "prepare closure cell for variable " + arg["cell"] +
@@ -143,7 +155,7 @@ class StackTrackingReceiver(object):
             " -> " + self.stringify_maybe_object_id(object_id_stack[0])
           )
       elif opname[opcode] == "LOAD_DEREF":
-        cur_frame = inspect.getouterframes(inspect.currentframe())[1]
+        cur_frame = get_instrumented_program_frame()
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
         self.print_stack_indent()
@@ -153,7 +165,7 @@ class StackTrackingReceiver(object):
           "->", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "STORE_DEREF":
-        cur_frame = inspect.getouterframes(inspect.currentframe())[1]
+        cur_frame = get_instrumented_program_frame()
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
         self.print_stack_indent()
