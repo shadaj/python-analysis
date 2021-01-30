@@ -21,11 +21,11 @@ class PatchingLoader(Loader):
     self.existing_loader = existing_loader
     self.finder = finder
 
-  def get_filename(self, fullname):
-    return self.existing_loader.get_filename(fullname)
+  def get_filename(self, fullname: str) -> str:
+    return self.existing_loader.get_filename(fullname) # type: ignore
 
-  def is_package(self, fullname):
-    return self.existing_loader.is_package(fullname)
+  def is_package(self, fullname: str) -> bool:
+    return self.existing_loader.is_package(fullname) # type: ignore
 
   def create_module(self, spec: ModuleSpec) -> Optional[ModuleType]:
     return self.existing_loader.create_module(spec)
@@ -41,12 +41,12 @@ class PatchingLoader(Loader):
       module_code = self.existing_loader.get_code(self.name) # type: ignore
       if module_code:
         print("[Python Analysis] Instrumenting module " + self.name)
-        [id_to_bytecode, code_to_id] = extract_all_codeobjects(module_code)
+        id_to_bytecode, code_to_id = extract_all_codeobjects(module_code)
         id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id)
 
         instrumented = id_to_bytecode_new_codeobjects[code_to_id[module_code]]
 
-        def common_receiver(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool):
+        def common_receiver(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool) -> None:
           call_all_receivers(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
 
         # TODO(shadaj): use an immutable overlay instead
@@ -58,21 +58,21 @@ class PatchingLoader(Loader):
     else:
       self.existing_loader.exec_module(module)
 
-modules_to_skip: List[ModuleType] = []
+modules_to_skip: List[str] = []
 
 class PatchingPathFinder(MetaPathFinder):
   existing_importers: List[MetaPathFinder]
   current_path: Optional[Sequence[_Path]]
   patched_modules: List[str]
 
-  def __init__(self):
+  def __init__(self) -> None:
     self.existing_importers = sys.meta_path.copy()
     self.patched_modules = []
 
-  def install(self):
+  def install(self) -> None:
     sys.meta_path.insert(0, self)
 
-  def uninstall(self):
+  def uninstall(self) -> None:
     sys.meta_path.remove(self)
     for module in self.patched_modules:
       del sys.modules[module]

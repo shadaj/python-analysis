@@ -1,13 +1,16 @@
+from types import CodeType, LambdaType
+
 from bytecode import Bytecode, CellVar, FreeVar, Instr, Label, UNSET
 
 from .util import clone_bytecode_empty_body
 
-from types import LambdaType
+from typing import Any, Callable, Dict, Optional, Union, cast
+from typing_extensions import Literal
 
 # Mappings from op to the size of the stack to report
 
 # Opcodes to instrument before they run
-pre_opcode_instrument = {
+pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "SETUP_LOOP": 0,
   "STORE_NAME": 1,
   "STORE_FAST": 1,
@@ -16,7 +19,7 @@ pre_opcode_instrument = {
   "STORE_SUBSCR": 3,
   "BINARY_SUBSCR": 2,
   "LOAD_ATTR": 1,
-  "CALL_FUNCTION": lambda op: op.arg + 1 # capture all args as well as the function
+  "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1 # capture all args as well as the function
 }
 
 # Opcodes to instrument after they run
@@ -30,8 +33,15 @@ post_opcode_instrument = {
   "CALL_FUNCTION": 1 # capture the return value
 }
 
-def emit_instrument(instrumented, op, i, stacksize, label_to_op_index, code_id, is_post, opcode=None, arg=None):
-  def emit_kv(k, v):
+def emit_instrument(
+  instrumented: Bytecode,
+  op: Instr, i: int, stacksize: int,
+  label_to_op_index: Dict[Label, int],
+  code_id: int, is_post: bool,
+  opcode: Optional[Union[int, Literal["JUMP_TARGET"]]] = None,
+  arg: Any = None
+) -> None:
+  def emit_kv(k: str, v: Union[str, int]) -> None:
     instrumented.append(Instr(
       name = "LOAD_CONST",
       arg = k,
@@ -167,13 +177,13 @@ def emit_instrument(instrumented, op, i, stacksize, label_to_op_index, code_id, 
       lineno = op.lineno
     ))
 
-def run_or_return_value(maybe_lambda, input: Instr):
-  if isinstance(maybe_lambda, LambdaType):
+def run_or_return_value(maybe_lambda: Union[int, Callable[[Instr], int]], input: Instr) -> int:
+  if callable(maybe_lambda):
     return maybe_lambda(input)
   else:
     return maybe_lambda
 
-def instrument_bytecode(code: Bytecode, code_id=0):
+def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
   instrumented = clone_bytecode_empty_body(code)
 
   label_to_op_index = {}
@@ -208,8 +218,8 @@ def instrument_bytecode(code: Bytecode, code_id=0):
   
   return instrumented
 
-def instrument_codeobject(code, code_id: int = 0):
+def instrument_codeobject(code: CodeType, code_id: int = 0) -> Bytecode:
   return instrument_bytecode(Bytecode.from_code(code), code_id)
 
-def instrument_source(source: str, code_id: int):
+def instrument_source(source: str, code_id: int) -> Bytecode:
   return instrument_codeobject(compile(source, "<string>", "exec"), code_id)

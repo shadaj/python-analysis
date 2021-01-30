@@ -19,7 +19,7 @@ def clean_stack_addresses(elem):
 
 def source_test(snapshot, source):
   root_codeobject = compile(source, "<string>", "exec")
-  [id_to_bytecode, code_to_id] = extract_all_codeobjects(root_codeobject)
+  id_to_bytecode, code_to_id = extract_all_codeobjects(root_codeobject)
   id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id)
 
   code_id_to_mapping = {}

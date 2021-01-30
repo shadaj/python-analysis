@@ -29,7 +29,7 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Typecheck with mypy
       run: |
-        mypy --ignore-missing-imports instrumentation
+        mypy --ignore-missing-imports --strict instrumentation
     - name: Test with pytest
       run: |
         pytest
