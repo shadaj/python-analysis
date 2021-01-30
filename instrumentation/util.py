@@ -1,7 +1,7 @@
 from bytecode import Bytecode, Instr
 from types import CodeType
 
-def clone_bytecode_empty_body(code):
+def clone_bytecode_empty_body(code: Bytecode) -> Bytecode:
   instrumented = Bytecode()
   instrumented.argcount = code.argcount
   instrumented.kwonlyargcount = code.kwonlyargcount
@@ -17,5 +17,5 @@ def clone_bytecode_empty_body(code):
   
   return instrumented
 
-def is_const_load_function(instr):
+def is_const_load_function(instr: object) -> bool:
   return isinstance(instr, Instr) and instr.name == "LOAD_CONST" and isinstance(instr.arg, CodeType)
