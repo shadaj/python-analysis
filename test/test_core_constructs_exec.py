@@ -38,7 +38,7 @@ def source_test(snapshot, source):
   snapshot.snapshot_counter += 1
 
   events = []
-  def event_receiver(stack, opcode, arg, opindex, code_id, is_post):
+  def py_instrument_receiver(stack, opcode, arg, opindex, code_id, is_post):
     if opcode == "JUMP_TARGET":
       events.append({ "arrive_at": code_id_to_mapping[code_id][arg["label"]] * 2 })
     else:
@@ -52,7 +52,7 @@ def source_test(snapshot, source):
       })
 
   exec(id_to_bytecode_new_codeobjects[code_to_id[root_codeobject]].to_code(), {
-    "py_instrument_receiver": event_receiver
+    "py_instrument_receiver": py_instrument_receiver
   })
 
   snapshot.assert_match(events, name=(str((snapshot.snapshot_counter, sys.version_info.major, sys.version_info.minor))))

@@ -21,11 +21,11 @@ class PatchingLoader(Loader):
     self.existing_loader = existing_loader
     self.finder = finder
 
-  def get_filename(self, fullname: str) -> str:
-    return self.existing_loader.get_filename(fullname) # type: ignore
-
-  def is_package(self, fullname: str) -> bool:
-    return self.existing_loader.is_package(fullname) # type: ignore
+    # extra attributes that are dynamically checked for by module import system
+    if hasattr(existing_loader, "get_filename"):
+      setattr(self, "get_filename", lambda fullname: existing_loader.get_filename(fullname))
+    if hasattr(existing_loader, "is_package"):
+      setattr(self, "is_package", lambda fullname: existing_loader.is_package(fullname))
 
   def create_module(self, spec: ModuleSpec) -> Optional[ModuleType]:
     return self.existing_loader.create_module(spec)
@@ -46,11 +46,11 @@ class PatchingLoader(Loader):
 
         instrumented = id_to_bytecode_new_codeobjects[code_to_id[module_code]]
 
-        def common_receiver(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool) -> None:
+        def py_instrument_receiver(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool) -> None:
           call_all_receivers(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
 
         # TODO(shadaj): use an immutable overlay instead
-        module.__dict__["py_instrument_receiver"] = common_receiver
+        module.__dict__["py_instrument_receiver"] = py_instrument_receiver
         exec(instrumented.to_code(), module.__dict__)
         self.finder.patched_modules.append(module.__name__)
       else:
