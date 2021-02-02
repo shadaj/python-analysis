@@ -23,9 +23,9 @@ class PatchingLoader(Loader):
 
     # extra attributes that are dynamically checked for by module import system
     if hasattr(existing_loader, "get_filename"):
-      setattr(self, "get_filename", lambda fullname: existing_loader.get_filename(fullname))
+      setattr(self, "get_filename", lambda fullname: existing_loader.get_filename(fullname)) # type: ignore
     if hasattr(existing_loader, "is_package"):
-      setattr(self, "is_package", lambda fullname: existing_loader.is_package(fullname))
+      setattr(self, "is_package", lambda fullname: existing_loader.is_package(fullname)) # type: ignore
 
   def create_module(self, spec: ModuleSpec) -> Optional[ModuleType]:
     return self.existing_loader.create_module(spec)
