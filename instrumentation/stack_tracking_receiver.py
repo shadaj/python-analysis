@@ -15,15 +15,19 @@ class ObjectId(object):
     self.id = id
 
 def get_instrumented_program_frame() -> FrameType:
+  is_next_frame = False
   for frame_container in inspect.getouterframes(inspect.currentframe()):
-    if frame_container.filename == "<string>":
+    if is_next_frame:
       return frame_container.frame
+    elif frame_container.function == "py_instrument_receiver":
+      is_next_frame = True
   raise Exception("Frame in instrumented code not found")
 
 class StackTrackingReceiver(EventReceiver):
   loop_stack: List[Any]
   function_call_stack: List[Any]
   cell_to_frame: Dict[int, Union[FrameType, int]]
+  already_in_receiver = False
 
   def __init__(self) -> None:
     self.loop_stack = []
@@ -82,6 +86,9 @@ class StackTrackingReceiver(EventReceiver):
       return self.cell_to_frame[self.heap_object_tracking.get_object_id(cell)]
 
   def on_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
+    if self.already_in_receiver:
+      return
+    self.already_in_receiver = True
     if opcode == "JUMP_TARGET":
       self.handle_jump_target(code_id, arg["label"], id_to_orig_bytecode)
     elif opname[opcode] == "CALL_FUNCTION" and not is_post:
@@ -185,3 +192,4 @@ class StackTrackingReceiver(EventReceiver):
         self.print_stack_indent()
         print("stack:", stack, "| opcode:", opname[opcode], "| arg:", arg, "| orig op:", id_to_orig_bytecode[code_id][opindex])
         # raise NotImplementedError()
+    self.already_in_receiver = False
