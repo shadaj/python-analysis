@@ -85,6 +85,8 @@ class StackTrackingReceiver(EventReceiver):
       cell = fn_object.__closure__[var_index]
       return self.cell_to_frame[self.heap_object_tracking.get_object_id(cell)]
 
+#Why no frame everywhere?
+#Store Subscr seems weird, check again
   def on_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
     if self.already_in_receiver:
       return

@@ -4,13 +4,13 @@ from instrumentation.stack_tracking_receiver import StackTrackingReceiver
 from instrumentation.module_loader import PatchingPathFinder
 from instrumentation.exec import exec_instrumented
 
-patcher = PatchingPathFinder()
-patcher.install()
+# patcher = PatchingPathFinder()
+# patcher.install()
 
-import numpy as np
-arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-with StackTrackingReceiver():
-  np.linalg.eigvals(arr)
+# import numpy as np
+# arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+# with StackTrackingReceiver():
+#   np.linalg.eigvals(arr)
 
 # source = dedent(
   # """
@@ -40,13 +40,15 @@ with StackTrackingReceiver():
   # """
 # )
 
-# source = dedent(
-  # """
-  # my_arr = [1, 2, 3]
-  # for i in range(0, 3):
-  #   my_arr[i] = my_arr[i] + 1
-  # """
-# )
+source = dedent(
+  """
+  def lol(a):
+    for i in range(0, 3):
+      a[i] = a[i] + 1
+  my_arr = [1, 2, 3]
+  lol(my_arr)
+  """
+)
 
 # source = dedent(
 #   """
@@ -78,5 +80,5 @@ with StackTrackingReceiver():
 #   """
 # )
 
-# with StackTrackingReceiver():
-#   exec_instrumented(source)
+with StackTrackingReceiver():
+  exec_instrumented(source)
