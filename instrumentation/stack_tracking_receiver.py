@@ -5,14 +5,26 @@ import inspect
 
 from .event_receiver import EventReceiver
 from .heap_object_tracking import HeapObjectTracker
+from .instrument import binary_ops
 
 from typing import Any, Dict, List, Union
 from typing_extensions import Literal
+
+class StackElement(object):
+  def __init__(self, concrete: Any, opcode: int, deps: List["StackElement"]):
+    self.concrete = concrete
+    self.opcode = opcode
+    self.deps = deps
 
 # newtype to track object IDs
 class ObjectId(object):
   def __init__(self, id: int) -> None:
     self.id = id
+
+  def __eq__(self, other: Any) -> bool:
+    if isinstance(other, ObjectId):
+      return self.id == other.id
+    return False
 
 def get_instrumented_program_frame() -> FrameType:
   is_next_frame = False
@@ -28,6 +40,9 @@ class StackTrackingReceiver(EventReceiver):
   function_call_stack: List[Any]
   cell_to_frame: Dict[int, Union[FrameType, int]]
   already_in_receiver = False
+  symbolic_stack: List[StackElement]
+  frame_variables: Dict[Union[FrameType, int], Dict[str, StackElement]]
+  pre_op_stack: List[Any]
 
   def __init__(self) -> None:
     self.loop_stack = []
@@ -35,6 +50,9 @@ class StackTrackingReceiver(EventReceiver):
     self.heap_object_tracking = HeapObjectTracker()
     self.frame_tracking = HeapObjectTracker()
     self.cell_to_frame = {}
+    self.symbolic_stack = []
+    self.frame_variables = {}
+    self.pre_op_stack = []
     super().__init__()
 
   def show_op_index(self, code_id: int, op_index: int, id_to_orig_bytecode: Dict[int, Bytecode]) -> str:
@@ -92,6 +110,8 @@ class StackTrackingReceiver(EventReceiver):
     if opcode == "JUMP_TARGET":
       self.handle_jump_target(code_id, arg["label"], id_to_orig_bytecode)
     elif opname[opcode] == "CALL_FUNCTION" and not is_post:
+      self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - len(stack)]
+
       function_args_id_stack = self.convert_stack_to_heap_id(stack)
       self.print_stack_indent()
       print(
@@ -107,6 +127,13 @@ class StackTrackingReceiver(EventReceiver):
       called_function = self.function_call_stack[-1]
       del self.function_call_stack[-1]
 
+      # TODO(shadaj): the return value should be already there as long as the target function is instrumented / modeled
+      self.symbolic_stack.append(StackElement(
+        function_args_id_stack[0],
+        opcode,
+        [] # TODO(shadaj): return value does have dependencies
+      ))
+
       self.print_stack_indent()
       print(
         "end function call - function:",
@@ -114,38 +141,102 @@ class StackTrackingReceiver(EventReceiver):
         "result:",
         self.stringify_maybe_object_id(function_args_id_stack[0])
       )
-    elif opname[opcode] == "BINARY_SUBSCR":
-      object_id_stack = self.convert_stack_to_heap_id(stack)
-      if not is_post:
-        self.cur_load = (object_id_stack[0], object_id_stack[1])
-      else:
-        self.print_stack_indent()
-        print(
-          "load", self.stringify_maybe_object_id(self.cur_load[0]), "at index", self.stringify_maybe_object_id(self.cur_load[1]),
-          "->", self.stringify_maybe_object_id(object_id_stack[0])
-        )
     else:
       object_id_stack = self.convert_stack_to_heap_id(stack)
 
-      if opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
+      if not is_post:
+        self.check_symbolic_stack(object_id_stack, opcode)
+
+      if opname[opcode] == "BINARY_SUBSCR":
+        if not is_post:
+          self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 2]
+          self.pre_op_stack.append((object_id_stack[0], object_id_stack[1]))
+        else:
+          cur_load = self.pre_op_stack.pop()
+
+          # TODO(shadaj): grab symbolic value if the element source is a list
+          self.symbolic_stack.append(StackElement(
+            object_id_stack[0],
+            opcode,
+            []
+          ))
+
+          self.print_stack_indent()
+          print(
+            "load", self.stringify_maybe_object_id(cur_load[0]), "at index", self.stringify_maybe_object_id(cur_load[1]),
+            "->", self.stringify_maybe_object_id(object_id_stack[0])
+          )
+      elif opname[opcode] in binary_ops:
+        if not is_post:
+          self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 2]
+          self.pre_op_stack.append((object_id_stack[0], object_id_stack[1]))
+        else:
+          cur_inputs = self.pre_op_stack.pop()
+
+          self.symbolic_stack.append(StackElement(
+            object_id_stack[0],
+            opcode,
+            [] # TODO(shadaj): mark dependencies from pre-info
+          ))
+
+          self.print_stack_indent()
+          print(
+            "binary op", self.stringify_maybe_object_id(cur_inputs[0]), opname[opcode], self.stringify_maybe_object_id(cur_inputs[1]),
+            "->", self.stringify_maybe_object_id(object_id_stack[0])
+          )
+      elif opname[opcode] == "POP_TOP" or opname[opcode] == "POP_JUMP_IF_FALSE" or opname[opcode] == "POP_JUMP_IF_TRUE":
+        if not is_post:
+          self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 1]
+      elif opname[opcode] == "ROT_TWO":
+        tos = self.symbolic_stack.pop()
+        tos1 = self.symbolic_stack.pop()
+        self.symbolic_stack.append(tos)
+        self.symbolic_stack.append(tos1)
+      elif opname[opcode] == "LOAD_CONST":
+        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
+
+        self.print_stack_indent()
+        print(
+          "load const ->", self.stringify_maybe_object_id(object_id_stack[0])
+        )
+      elif opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
+        cur_frame = get_instrumented_program_frame()
+        if cur_frame in self.frame_variables and arg in self.frame_variables[cur_frame]:
+          if not self.frame_variables[cur_frame][arg].concrete == object_id_stack[0]:
+            raise Exception(
+              "Variable " + arg + " has changed from " + \
+                self.stringify_maybe_object_id(self.frame_variables[cur_frame][arg].concrete) + \
+                  " to " + self.stringify_maybe_object_id(object_id_stack[0]))
+        else:
+          if cur_frame not in self.frame_variables:
+            self.frame_variables[cur_frame] = {}
+          self.print_stack_indent()
+          print("WARNING: creating a fresh stack element for previously unseen variable")
+          self.frame_variables[cur_frame][arg] = StackElement(object_id_stack[0], opcode, [])
+
+        self.symbolic_stack.append(self.frame_variables[cur_frame][arg])
+
         self.print_stack_indent()
         print(
           "load", arg,
-          "from", self.stringify_frame_id(self.frame_tracking.get_object_id(
-            get_instrumented_program_frame()
-          )),
+          "from", self.stringify_frame_id(self.frame_tracking.get_object_id(cur_frame)),
           "->", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "STORE_NAME" or opname[opcode] == "STORE_FAST":
+        cur_frame = get_instrumented_program_frame()
+        if cur_frame not in self.frame_variables:
+          self.frame_variables[cur_frame] = {}
+        self.frame_variables[cur_frame][arg] = self.symbolic_stack.pop()
+
         self.print_stack_indent()
         print(
           "store", arg,
-          "in", self.stringify_frame_id(self.frame_tracking.get_object_id(
-            get_instrumented_program_frame()
-          )),
+          "in", self.stringify_frame_id(self.frame_tracking.get_object_id(cur_frame)),
           "=", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "STORE_SUBSCR":
+        self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 3]
+
         self.print_stack_indent()
         print(
           "store into", self.stringify_maybe_object_id(object_id_stack[1]),
@@ -192,4 +283,20 @@ class StackTrackingReceiver(EventReceiver):
         self.print_stack_indent()
         print("stack:", stack, "| opcode:", opname[opcode], "| arg:", arg, "| orig op:", id_to_orig_bytecode[code_id][opindex])
         # raise NotImplementedError()
+      
+      if is_post:
+        self.check_symbolic_stack(object_id_stack, opcode)
+
     self.already_in_receiver = False
+
+  def check_symbolic_stack(self, object_id_stack: List[Any], opcode: int) -> None:
+    for i, e in enumerate(object_id_stack):
+      index_from_end = i - len(object_id_stack)
+      if not self.symbolic_stack[index_from_end].concrete == e:
+        print(opname[opcode])
+        print([self.stringify_maybe_object_id(e.concrete) for e in self.symbolic_stack])
+        print([self.stringify_maybe_object_id(e) for e in object_id_stack])
+        raise Exception(
+          "Stack element " + str(i) + " is symbolically " + \
+            self.stringify_maybe_object_id(self.symbolic_stack[index_from_end].concrete) + \
+              " but concretely " + self.stringify_maybe_object_id(e))

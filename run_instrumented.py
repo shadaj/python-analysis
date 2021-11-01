@@ -7,10 +7,19 @@ from instrumentation.exec import exec_instrumented
 patcher = PatchingPathFinder()
 patcher.install()
 
-import numpy as np
-arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+from demos.quicksort import quick1
+
+import random
+arr = [random.randint(0, 10) for i in range(10)]
+print(arr)
 with StackTrackingReceiver():
-  np.linalg.eigvals(arr)
+  quick1(arr)
+print(arr)
+
+# import numpy as np
+# arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+# with StackTrackingReceiver():
+#   np.linalg.eigvals(arr)
 
 # source = dedent(
   # """
