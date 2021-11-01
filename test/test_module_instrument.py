@@ -3,6 +3,7 @@ import sys
 from types import ModuleType
 
 from dis import opname
+from bytecode import Compare
 
 from instrumentation.module_loader import PatchingPathFinder
 from instrumentation.event_receiver import EventReceiver
@@ -37,7 +38,7 @@ class LoggingReceiver(EventReceiver):
       self.log.append({
         "stack": list(map(cleanup_elem, stack)),
         "opcode": opcode if isinstance(opcode, str) else opname[opcode],
-        "arg": arg,
+        "arg": { "cmp": str(arg) } if (isinstance(arg, Compare)) else arg,
         "is_post": is_post
       })
     self.is_in_receiver = False
