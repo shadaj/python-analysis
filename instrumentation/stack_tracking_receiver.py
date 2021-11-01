@@ -147,26 +147,7 @@ class StackTrackingReceiver(EventReceiver):
       if not is_post:
         self.check_symbolic_stack(object_id_stack, opcode)
 
-      if opname[opcode] == "BINARY_SUBSCR":
-        if not is_post:
-          self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 2]
-          self.pre_op_stack.append((object_id_stack[0], object_id_stack[1]))
-        else:
-          cur_load = self.pre_op_stack.pop()
-
-          # TODO(shadaj): grab symbolic value if the element source is a list
-          self.symbolic_stack.append(StackElement(
-            object_id_stack[0],
-            opcode,
-            []
-          ))
-
-          self.print_stack_indent()
-          print(
-            "load", self.stringify_maybe_object_id(cur_load[0]), "at index", self.stringify_maybe_object_id(cur_load[1]),
-            "->", self.stringify_maybe_object_id(object_id_stack[0])
-          )
-      elif opname[opcode] in binary_ops:
+      if opname[opcode] in binary_ops:
         if not is_post:
           self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 2]
           self.pre_op_stack.append((object_id_stack[0], object_id_stack[1]))
