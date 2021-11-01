@@ -7,13 +7,18 @@ from textwrap import dedent
 
 import re
 import sys
+from types import CodeType
 
 def clean_stack_addresses(elem):
   if type(elem).__name__ == "cell" or type(elem).__name__ == "function": # CellType only in Python 3.8
     return re.sub(
       "0x[a-zA-Z0-9]+",
       "SOME ADDRESS",
-      str(elem)
+      re.sub(
+        "file \"(.|[-/])*\"",
+        "file \"some-file\"",
+        str(elem)
+      )
     )
   else:
     return elem

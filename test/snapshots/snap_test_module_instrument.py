@@ -2,18 +2,18 @@
 # snapshottest: v1 - https://goo.gl/zC4yUc
 from __future__ import unicode_literals
 
-from snapshottest import GenericRepr, Snapshot
+from snapshottest import Snapshot
 
 
 snapshots = Snapshot()
 
 snapshots['test_calls_to_module_function 1'] = [
     {
-        'arg': GenericRepr('<code object other_func at 0x100000000, file "/home/shadaj/work/python-analysis/test/simple_module_to_import.py", line 1>'),
+        'arg': '<code object other_func at SOME ADDRESS, file "some-file", line 1>',
         'is_post': True,
         'opcode': 'LOAD_CONST',
         'stack': [
-            '<code object other_func at SOME ADDRESS, file "/home/shadaj/work/python-analysis/test/simple_module_to_import.py", line 1>'
+            '<code object other_func at SOME ADDRESS, file "some-file", line 1>'
         ]
     },
     {
@@ -33,11 +33,11 @@ snapshots['test_calls_to_module_function 1'] = [
         ]
     },
     {
-        'arg': GenericRepr('<code object hello at 0x100000000, file "/home/shadaj/work/python-analysis/test/simple_module_to_import.py", line 5>'),
+        'arg': '<code object hello at SOME ADDRESS, file "some-file", line 5>',
         'is_post': True,
         'opcode': 'LOAD_CONST',
         'stack': [
-            '<code object hello at SOME ADDRESS, file "/home/shadaj/work/python-analysis/test/simple_module_to_import.py", line 5>'
+            '<code object hello at SOME ADDRESS, file "some-file", line 5>'
         ]
     },
     {
@@ -1711,11 +1711,11 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
-        'arg': GenericRepr('<code object <dictcomp> at 0x100000000, file "/home/shadaj/work/python-analysis/.venv/lib/python3.7/site-packages/numpy/core/fromnumeric.py", line 71>'),
+        'arg': '<code object <dictcomp> at SOME ADDRESS, file "some-file", line 71>',
         'is_post': True,
         'opcode': 'LOAD_CONST',
         'stack': [
-            '<code object <dictcomp> at SOME ADDRESS, file "/home/shadaj/work/python-analysis/.venv/lib/python3.7/site-packages/numpy/core/fromnumeric.py", line 71>'
+            '<code object <dictcomp> at SOME ADDRESS, file "some-file", line 71>'
         ]
     },
     {

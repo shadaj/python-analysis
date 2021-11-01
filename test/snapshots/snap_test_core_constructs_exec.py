@@ -1621,98 +1621,6 @@ Code Object: f
               26 RETURN_VALUE
 '''
 
-snapshots['test_function_call (2, 3, 7)'] = [
-    {
-        'arg': GenericRepr('<code object f at 0x100000000, file "<string>", line 2>'),
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 0,
-        'stack': [
-            GenericRepr('<code object f at 0x100000000, file "<string>", line 2>')
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 26,
-        'stack': [
-            'f'
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 78,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 80,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 130,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': None,
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 0,
-        'stack': [
-            None
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 130,
-        'stack': [
-            None
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'POP_TOP',
-        'orig_op': 156,
-        'stack': [
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 176,
-        'stack': [
-            None
-        ]
-    }
-]
-
 snapshots['test_function_call_with_args (1, 3, 7)'] = '''
 Code Object: <module>
 ~  2           0 LOAD_CONST               0 (<code object f at SOME ADDRESS, file "<string>", line 2>)
@@ -1850,109 +1758,6 @@ Code Object: f
 +             24 UNPACK_SEQUENCE          1
               26 RETURN_VALUE
 '''
-
-snapshots['test_function_call_with_args (2, 3, 7)'] = [
-    {
-        'arg': GenericRepr('<code object f at 0x100000000, file "<string>", line 2>'),
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 0,
-        'stack': [
-            GenericRepr('<code object f at 0x100000000, file "<string>", line 2>')
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 26,
-        'stack': [
-            'f'
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 78,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 80,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 1,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 106,
-        'stack': [
-            1
-        ]
-    },
-    {
-        'arg': 1,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 162,
-        'stack': [
-            '<function f at SOME ADDRESS>',
-            1
-        ]
-    },
-    {
-        'arg': 'x',
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_FAST',
-        'orig_op': 0,
-        'stack': [
-            1
-        ]
-    },
-    {
-        'arg': 1,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 162,
-        'stack': [
-            1
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'POP_TOP',
-        'orig_op': 188,
-        'stack': [
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 208,
-        'stack': [
-            None
-        ]
-    }
-]
 
 snapshots['test_inner_function (1, 3, 7)'] = '''
 Code Object: <module>
@@ -2179,177 +1984,6 @@ Code Object: g
 +             24 UNPACK_SEQUENCE          1
               26 RETURN_VALUE
 '''
-
-snapshots['test_inner_function (2, 3, 7)'] = [
-    {
-        'arg': GenericRepr('<code object f at 0x100000000, file "<string>", line 2>'),
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 0,
-        'stack': [
-            GenericRepr('<code object f at 0x100000000, file "<string>", line 2>')
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 26,
-        'stack': [
-            'f'
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'STORE_NAME',
-        'orig_op': 78,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 'f',
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_NAME',
-        'orig_op': 80,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 130,
-        'stack': [
-            '<function f at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': GenericRepr('<code object g at 0x100000000, file "<string>", line 3>'),
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 0,
-        'stack': [
-            GenericRepr('<code object g at 0x100000000, file "<string>", line 3>')
-        ]
-    },
-    {
-        'arg': 'f.<locals>.g',
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 26,
-        'stack': [
-            'f.<locals>.g'
-        ]
-    },
-    {
-        'arg': 'g',
-        'code': 'f',
-        'is_post': False,
-        'opcode': 'STORE_FAST',
-        'orig_op': 78,
-        'stack': [
-            '<function f.<locals>.g at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 'g',
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_FAST',
-        'orig_op': 80,
-        'stack': [
-            '<function f.<locals>.g at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': 0,
-        'code': 'f',
-        'is_post': False,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 130,
-        'stack': [
-            '<function f.<locals>.g at SOME ADDRESS>'
-        ]
-    },
-    {
-        'arg': None,
-        'code': 'g',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 0,
-        'stack': [
-            None
-        ]
-    },
-    {
-        'arg': 0,
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 130,
-        'stack': [
-            None
-        ]
-    },
-    {
-        'arg': None,
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'POP_TOP',
-        'orig_op': 156,
-        'stack': [
-        ]
-    },
-    {
-        'arg': None,
-        'code': 'f',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 176,
-        'stack': [
-            None
-        ]
-    },
-    {
-        'arg': 0,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'CALL_FUNCTION',
-        'orig_op': 130,
-        'stack': [
-            None
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'POP_TOP',
-        'orig_op': 156,
-        'stack': [
-        ]
-    },
-    {
-        'arg': None,
-        'code': '<module>',
-        'is_post': True,
-        'opcode': 'LOAD_CONST',
-        'orig_op': 176,
-        'stack': [
-            None
-        ]
-    }
-]
 
 snapshots['test_inner_function_nonlocal_ref (1, 3, 7)'] = '''
 Code Object: <module>
@@ -2610,6 +2244,372 @@ Code Object: g
 +             28 UNPACK_SEQUENCE          1
               30 RETURN_VALUE
 '''
+
+snapshots['test_function_call (2, 3, 7)'] = [
+    {
+        'arg': GenericRepr('<code object f at 0x100000000, file "<string>", line 2>'),
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 0,
+        'stack': [
+            GenericRepr('<code object f at 0x100000000, file "<string>", line 2>')
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 26,
+        'stack': [
+            'f'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 78,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 80,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 130,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': None,
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 0,
+        'stack': [
+            None
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 130,
+        'stack': [
+            None
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'POP_TOP',
+        'orig_op': 156,
+        'stack': [
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 176,
+        'stack': [
+            None
+        ]
+    }
+]
+
+snapshots['test_function_call_with_args (2, 3, 7)'] = [
+    {
+        'arg': GenericRepr('<code object f at 0x100000000, file "<string>", line 2>'),
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 0,
+        'stack': [
+            GenericRepr('<code object f at 0x100000000, file "<string>", line 2>')
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 26,
+        'stack': [
+            'f'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 78,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 80,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 1,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 106,
+        'stack': [
+            1
+        ]
+    },
+    {
+        'arg': 1,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 162,
+        'stack': [
+            '<function f at SOME ADDRESS>',
+            1
+        ]
+    },
+    {
+        'arg': 'x',
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_FAST',
+        'orig_op': 0,
+        'stack': [
+            1
+        ]
+    },
+    {
+        'arg': 1,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 162,
+        'stack': [
+            1
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'POP_TOP',
+        'orig_op': 188,
+        'stack': [
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 208,
+        'stack': [
+            None
+        ]
+    }
+]
+
+snapshots['test_inner_function (2, 3, 7)'] = [
+    {
+        'arg': GenericRepr('<code object f at 0x100000000, file "<string>", line 2>'),
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 0,
+        'stack': [
+            GenericRepr('<code object f at 0x100000000, file "<string>", line 2>')
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 26,
+        'stack': [
+            'f'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'STORE_NAME',
+        'orig_op': 78,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'f',
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_NAME',
+        'orig_op': 80,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 130,
+        'stack': [
+            '<function f at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': GenericRepr('<code object g at 0x100000000, file "<string>", line 3>'),
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 0,
+        'stack': [
+            GenericRepr('<code object g at 0x100000000, file "<string>", line 3>')
+        ]
+    },
+    {
+        'arg': 'f.<locals>.g',
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 26,
+        'stack': [
+            'f.<locals>.g'
+        ]
+    },
+    {
+        'arg': 'g',
+        'code': 'f',
+        'is_post': False,
+        'opcode': 'STORE_FAST',
+        'orig_op': 78,
+        'stack': [
+            '<function f.<locals>.g at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'g',
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_FAST',
+        'orig_op': 80,
+        'stack': [
+            '<function f.<locals>.g at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 0,
+        'code': 'f',
+        'is_post': False,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 130,
+        'stack': [
+            '<function f.<locals>.g at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': None,
+        'code': 'g',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 0,
+        'stack': [
+            None
+        ]
+    },
+    {
+        'arg': 0,
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 130,
+        'stack': [
+            None
+        ]
+    },
+    {
+        'arg': None,
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'POP_TOP',
+        'orig_op': 156,
+        'stack': [
+        ]
+    },
+    {
+        'arg': None,
+        'code': 'f',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 176,
+        'stack': [
+            None
+        ]
+    },
+    {
+        'arg': 0,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'CALL_FUNCTION',
+        'orig_op': 130,
+        'stack': [
+            None
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'POP_TOP',
+        'orig_op': 156,
+        'stack': [
+        ]
+    },
+    {
+        'arg': None,
+        'code': '<module>',
+        'is_post': True,
+        'opcode': 'LOAD_CONST',
+        'orig_op': 176,
+        'stack': [
+            None
+        ]
+    }
+]
 
 snapshots['test_inner_function_nonlocal_ref (2, 3, 7)'] = [
     {
