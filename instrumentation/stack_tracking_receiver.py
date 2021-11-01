@@ -149,20 +149,21 @@ class StackTrackingReceiver(EventReceiver):
 
       if opname[opcode] in binary_ops:
         if not is_post:
-          self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 2]
-          self.pre_op_stack.append((object_id_stack[0], object_id_stack[1]))
+          tos = self.symbolic_stack.pop()
+          tos1 = self.symbolic_stack.pop()
+          self.pre_op_stack.append((tos1, tos))
         else:
           cur_inputs = self.pre_op_stack.pop()
 
           self.symbolic_stack.append(StackElement(
             object_id_stack[0],
             opcode,
-            [] # TODO(shadaj): mark dependencies from pre-info
+            [cur_inputs[0], cur_inputs[1]]
           ))
 
           self.print_stack_indent()
           print(
-            "binary op", self.stringify_maybe_object_id(cur_inputs[0]), opname[opcode], self.stringify_maybe_object_id(cur_inputs[1]),
+            "binary op", self.stringify_maybe_object_id(cur_inputs[0].concrete), opname[opcode], self.stringify_maybe_object_id(cur_inputs[1].concrete),
             "->", self.stringify_maybe_object_id(object_id_stack[0])
           )
       elif opname[opcode] == "POP_TOP" or opname[opcode] == "POP_JUMP_IF_FALSE" or opname[opcode] == "POP_JUMP_IF_TRUE":
