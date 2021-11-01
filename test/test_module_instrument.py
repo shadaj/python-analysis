@@ -36,10 +36,10 @@ class LoggingReceiver(EventReceiver):
       self.log.append({ "arrive_at": arg["label"] })
     else:
       self.log.append({
-        "stack": list(map(cleanup_elem, stack)),
-        "opcode": opcode if isinstance(opcode, str) else opname[opcode],
         "arg": { "cmp": str(arg) } if (isinstance(arg, Compare)) else arg,
-        "is_post": is_post
+        "is_post": is_post,
+        "opcode": opcode if isinstance(opcode, str) else opname[opcode],
+        "stack": list(map(cleanup_elem, stack)),
       })
     self.is_in_receiver = False
 
