@@ -78,14 +78,19 @@ class PatchingPathFinder(MetaPathFinder):
       del sys.modules[module]
     self.patched_modules = []
 
-  def find_module(self, fullname: str, path: Optional[Sequence[_Path]]) -> Optional[Loader]:
-    existing_loader = None
+  def find_spec(self, fullname: str, path: Optional[Sequence[_Path]], target: Optional[ModuleType] = None) -> Optional[ModuleSpec]:
+    existing_spec = None
     for importer in self.existing_importers:
-      existing_loader = importer.find_module(fullname, path)
-      if existing_loader is not None:
+      existing_spec = importer.find_spec(fullname, path, target)
+      if existing_spec is not None:
         break
 
-    if existing_loader is not None and fullname not in modules_to_skip:
-      return PatchingLoader(fullname, existing_loader, self)
+    if existing_spec is not None and existing_spec.loader is not None and fullname not in modules_to_skip:
+      existing_spec.loader = PatchingLoader(
+        fullname,
+        existing_spec.loader, # type: ignore
+        self
+      )
+      return existing_spec
     else:
       return None
