@@ -1,4 +1,4 @@
-from dis import opname
+from dis import opname, opmap
 from types import FrameType
 from bytecode import Bytecode
 import inspect
@@ -7,14 +7,49 @@ from .event_receiver import EventReceiver
 from .heap_object_tracking import HeapObjectTracker
 from .instrument import binary_ops
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 from typing_extensions import Literal
 
 class StackElement(object):
-  def __init__(self, concrete: Any, opcode: Union[Literal["JUMP_TARGET"], int], deps: List["StackElement"]):
+  is_cow_pointer: bool
+  cow_latest_value: Optional["StackElement"]
+  collection_elems: Optional[Union[List["StackElement"], Dict["StackElement", "StackElement"]]]
+
+  def __init__(
+    self,
+    concrete: Any, opcode: Union[Literal["JUMP_TARGET"], int],
+    deps: List["StackElement"],
+    is_cow_pointer: bool = False,
+    cow_latest_value: Optional["StackElement"] = None,
+    collection_elems: Optional[Union[List["StackElement"], Dict["StackElement", "StackElement"]]] = None
+  ):
     self.concrete = concrete
     self.opcode = opcode
     self.deps = deps
+    self.is_cow_pointer = is_cow_pointer
+    self.cow_latest_value = cow_latest_value
+    self.collection_elems = collection_elems
+  
+  def collection_updated(self, i, value) -> "StackElement":
+    if isinstance(self.collection_elems, list):
+      # elems_copy = [StackElement(
+      #   e.concrete,
+      #   opmap["BINARY_SUBSCR"],
+      #   [self, i],
+      # ) for i, e in enumerate(self.collection_elems)]
+      elems_copy = [e for i, e in enumerate(self.collection_elems)]
+      elems_copy[i] = value
+      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy)
+    elif isinstance(self.collection_elems, dict):
+      elems_copy = {k: StackElement(
+        e.concrete,
+        opmap["BINARY_SUBSCR"],
+        [self, k],
+      ) for k, e in self.collection_elems.items()}
+      elems_copy[i] = value
+      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy)
+    else:
+      raise Exception("Invalid collection type")
 
 class FunctionCallHandled(object):
   return_on_stack: bool
@@ -133,6 +168,32 @@ class StackTrackingReceiver(EventReceiver):
       self.frame_variables[resolved_frame] = {}
     self.frame_variables[resolved_frame][var_name] = self.symbolic_stack.pop()
 
+  def convert_concrete_to_symbolic(self, concrete_value: Any) -> StackElement:
+    if isinstance(concrete_value, list):
+      heap_id = self.convert_stack_elem_to_heap_id(concrete_value)
+      underlying = StackElement(
+        heap_id,
+        -1,
+        [],
+        collection_elems=[self.convert_concrete_to_symbolic(e) for e in concrete_value],
+      )
+
+      return StackElement(
+        heap_id,
+        -1,
+        [],
+        is_cow_pointer=True,
+        cow_latest_value=underlying,
+      )
+    elif isinstance(concrete_value, dict):
+      raise Exception("TODO(shadaj)")
+    else:
+      return StackElement(
+        self.convert_stack_elem_to_heap_id(concrete_value),
+        -1,
+        []
+      )
+
   def on_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
     if self.already_in_receiver:
       return
@@ -148,10 +209,7 @@ class StackTrackingReceiver(EventReceiver):
         # this frame was called from a non-instrumented frame, or is the top-level frame,
         # so we have to populate locals without symbolic traces
         for local, value in cur_frame.f_locals.items():
-          self.frame_variables[cur_frame][local] = StackElement(
-            self.convert_stack_elem_to_heap_id(value),
-            opcode, []
-          )
+          self.frame_variables[cur_frame][local] = self.convert_concrete_to_symbolic(value)
       else:
         for name, value in self.pre_op_stack[-1].arg_mapping.items():
           self.frame_variables[cur_frame][name] = value
@@ -159,11 +217,8 @@ class StackTrackingReceiver(EventReceiver):
         # handle default arguments
         for local, value in cur_frame.f_locals.items():
           if local not in self.frame_variables[cur_frame]:
-            self.frame_variables[cur_frame][local] = StackElement(
-              self.convert_stack_elem_to_heap_id(value),
-              opcode,
-              [] # TODO(shadaj): handle mutable default arguments
-            )
+            # TODO(shadaj): handle mutable default arguments
+            self.frame_variables[cur_frame][local] = self.convert_concrete_to_symbolic(value)
 
     if opcode == "JUMP_TARGET":
       self.handle_jump_target(code_id, arg["label"], id_to_orig_bytecode)
@@ -232,26 +287,7 @@ class StackTrackingReceiver(EventReceiver):
       if not is_post:
         self.check_symbolic_stack(object_id_stack, opcode)
 
-      if opname[opcode] in binary_ops:
-        if not is_post:
-          tos = self.symbolic_stack.pop()
-          tos1 = self.symbolic_stack.pop()
-          self.pre_op_stack.append((tos1, tos))
-        else:
-          cur_inputs = self.pre_op_stack.pop()
-
-          self.symbolic_stack.append(StackElement(
-            object_id_stack[0],
-            opcode,
-            [cur_inputs[0], cur_inputs[1]]
-          ))
-
-          self.print_stack_indent()
-          print(
-            "binary op", self.stringify_maybe_object_id(cur_inputs[0].concrete), opname[opcode], self.stringify_maybe_object_id(cur_inputs[1].concrete),
-            "->", self.stringify_maybe_object_id(object_id_stack[0])
-          )
-      elif opname[opcode] == "POP_TOP" or opname[opcode] == "POP_JUMP_IF_FALSE" or opname[opcode] == "POP_JUMP_IF_TRUE":
+      if opname[opcode] == "POP_TOP" or opname[opcode] == "POP_JUMP_IF_FALSE" or opname[opcode] == "POP_JUMP_IF_TRUE":
         if not is_post:
           self.print_stack_indent()
           print(f"pop top -> {self.stringify_maybe_object_id(stack[0])}")
@@ -296,31 +332,6 @@ class StackTrackingReceiver(EventReceiver):
           "in", self.stringify_frame_id(self.frame_tracking.get_object_id(cur_frame)),
           "=", self.stringify_maybe_object_id(object_id_stack[0])
         )
-      elif opname[opcode] == "STORE_SUBSCR":
-        self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 3]
-
-        self.print_stack_indent()
-        print(
-          "store into", self.stringify_maybe_object_id(object_id_stack[1]),
-          "at index", self.stringify_maybe_object_id(object_id_stack[2]),
-          "=", self.stringify_maybe_object_id(object_id_stack[0])
-        )
-      elif opname[opcode] == "SETUP_LOOP":
-        self.print_stack_indent()
-        print("begin loop", id_to_orig_bytecode[code_id][opindex])
-        self.loop_stack.append(arg["label"])
-      elif opname[opcode] == "LOAD_CLOSURE":
-        cur_frame = get_instrumented_program_frame()
-        if not object_id_stack[0].id in self.cell_to_frame:
-          self.cell_to_frame[object_id_stack[0].id] = self.frame_tracking.get_object_id(cur_frame)
-          self.print_stack_indent()
-          print(
-            "prepare closure cell for variable " + arg["cell"] +
-            " in " + self.stringify_frame_id(self.cell_to_frame[object_id_stack[0].id]) +
-            " -> " + self.stringify_maybe_object_id(object_id_stack[0])
-          )
-        
-        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
       elif opname[opcode] == "LOAD_DEREF":
         cur_frame = get_instrumented_program_frame()
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
@@ -347,6 +358,88 @@ class StackTrackingReceiver(EventReceiver):
           "in", self.stringify_frame_id(resolved_frame),
           "=", self.stringify_maybe_object_id(object_id_stack[0])
         )
+      elif opname[opcode] == "BINARY_SUBSCR":
+        if not is_post:
+          index = self.symbolic_stack.pop()
+          collection = self.symbolic_stack.pop()
+          self.pre_op_stack.append((collection, index))
+        else:
+          collection, index = self.pre_op_stack.pop()
+
+          index_reified = index.concrete
+          if collection.is_cow_pointer:
+            loaded_symbolic = collection.cow_latest_value.collection_elems[index_reified]
+            self.symbolic_stack.append(StackElement(
+              loaded_symbolic.concrete,
+              opcode,
+              [collection.cow_latest_value, index_reified],
+            ))
+          else:
+            raise Exception(f"Cannot store into non-cow collection: {self.stringify_maybe_object_id(collection.concrete)}")
+
+          self.print_stack_indent()
+          print(
+            "load from", self.stringify_maybe_object_id(collection.concrete),
+            "at index", self.stringify_maybe_object_id(index.concrete),
+            "->", self.stringify_maybe_object_id(object_id_stack[0])
+          )
+      elif opname[opcode] == "STORE_SUBSCR":
+        index = self.symbolic_stack.pop()
+        collection = self.symbolic_stack.pop()
+        value = self.symbolic_stack.pop()
+
+        index_reified = index.concrete # TODO(shadaj): handle non-integer indices
+        if collection.is_cow_pointer:
+          orig_collection = collection.cow_latest_value
+          new_collection = orig_collection.collection_updated(index_reified, value)
+          collection.cow_latest_value = new_collection
+        else:
+          raise Exception("Cannot store into non-cow collection")
+
+        self.print_stack_indent()
+        print(
+          "store into", self.stringify_maybe_object_id(object_id_stack[1]),
+          "at index", self.stringify_maybe_object_id(object_id_stack[2]),
+          "=", self.stringify_maybe_object_id(object_id_stack[0])
+        )
+      elif opname[opcode] == "LOAD_CLOSURE":
+        cur_frame = get_instrumented_program_frame()
+        if not object_id_stack[0].id in self.cell_to_frame:
+          self.cell_to_frame[object_id_stack[0].id] = self.frame_tracking.get_object_id(cur_frame)
+          self.print_stack_indent()
+          print(
+            "prepare closure cell for variable " + arg["cell"] +
+            " in " + self.stringify_frame_id(self.cell_to_frame[object_id_stack[0].id]) +
+            " -> " + self.stringify_maybe_object_id(object_id_stack[0])
+          )
+        
+        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
+      elif opname[opcode] == "SETUP_LOOP":
+        self.print_stack_indent()
+        print("begin loop", id_to_orig_bytecode[code_id][opindex])
+        self.loop_stack.append(arg["label"])
+      elif opname[opcode] in binary_ops:
+        if not is_post:
+          tos = self.symbolic_stack.pop()
+          tos1 = self.symbolic_stack.pop()
+          self.pre_op_stack.append((tos1, tos))
+        else:
+          cur_inputs = self.pre_op_stack.pop()
+
+          self.symbolic_stack.append(StackElement(
+            object_id_stack[0],
+            opcode,
+            [cur_inputs[0], cur_inputs[1]]
+          ))
+
+          self.print_stack_indent()
+          print(
+            "binary op",
+            self.stringify_maybe_object_id(cur_inputs[0].concrete),
+            opname[opcode],
+            self.stringify_maybe_object_id(cur_inputs[1].concrete),
+            "->", self.stringify_maybe_object_id(object_id_stack[0])
+          )
       else:
         self.print_stack_indent()
         print("UNKNOWN OPCODE:")
