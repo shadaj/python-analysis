@@ -114,7 +114,7 @@ class StackTrackingReceiver(EventReceiver):
       cell = fn_object.__closure__[var_index]
       return self.cell_to_frame[self.heap_object_tracking.get_object_id(cell)]
 
-  def load_onto_symbolic_stack(self, object_id_stack: List[Any], resolved_frame: FrameType, var_name: str) -> None:
+  def load_onto_symbolic_stack(self, object_id_stack: List[Any], resolved_frame: Union[FrameType, int], var_name: str) -> None:
     if var_name in self.frame_variables[resolved_frame]:
       if not self.frame_variables[resolved_frame][var_name].concrete == object_id_stack[0]:
         raise Exception(
@@ -126,7 +126,7 @@ class StackTrackingReceiver(EventReceiver):
 
     self.symbolic_stack.append(self.frame_variables[resolved_frame][var_name])
 
-  def store_from_symbolic_stack(self, resolved_frame: FrameType, var_name: str) -> None:
+  def store_from_symbolic_stack(self, resolved_frame: Union[FrameType, int], var_name: str) -> None:
     if resolved_frame not in self.frame_variables:
       self.frame_variables[resolved_frame] = {}
     self.frame_variables[resolved_frame][var_name] = self.symbolic_stack.pop()
