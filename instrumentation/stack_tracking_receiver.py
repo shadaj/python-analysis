@@ -43,6 +43,7 @@ class StackTrackingReceiver(EventReceiver):
   symbolic_stack: List[StackElement]
   frame_variables: Dict[Union[FrameType, int], Dict[str, StackElement]]
   pre_op_stack: List[Any]
+  frame_stack: List[FrameType]
 
   def __init__(self) -> None:
     self.loop_stack = []
@@ -53,6 +54,7 @@ class StackTrackingReceiver(EventReceiver):
     self.symbolic_stack = []
     self.frame_variables = {}
     self.pre_op_stack = []
+    self.frame_stack = []
     super().__init__()
 
   def show_op_index(self, code_id: int, op_index: int, id_to_orig_bytecode: Dict[int, Bytecode]) -> str:
@@ -82,13 +84,16 @@ class StackTrackingReceiver(EventReceiver):
       self.print_stack_indent()
       print("arrived at:", self.show_op_index(code_id, target_op_index, id_to_orig_bytecode))
 
+  def convert_stack_elem_to_heap_id(self, elem: Any) -> Any:
+    if self.heap_object_tracking.is_heap_object(elem):
+      return ObjectId(self.heap_object_tracking.get_object_id(elem))
+    else:
+      return elem
+
   def convert_stack_to_heap_id(self, stack: List[Any]) -> List[Any]:
     object_id_stack = []
     for elem in stack:
-      if self.heap_object_tracking.is_heap_object(elem):
-        object_id_stack.append(ObjectId(self.heap_object_tracking.get_object_id(elem)))
-      else:
-        object_id_stack.append(elem)
+      object_id_stack.append(self.convert_stack_elem_to_heap_id(elem))
 
     return object_id_stack
 
@@ -107,40 +112,76 @@ class StackTrackingReceiver(EventReceiver):
     if self.already_in_receiver:
       return
     self.already_in_receiver = True
+    
+    cur_frame = get_instrumented_program_frame()
+    if len(self.frame_stack) == 0 or not self.frame_stack[-1] == cur_frame:
+      # first time entering this instrumented frame
+      self.frame_stack.append(cur_frame)
+      self.frame_variables[cur_frame] = {}
+
+      if len(self.frame_stack) == 1 or not self.frame_stack[-2] == cur_frame.f_back:
+        # this frame was called from a non-instrumented frame, or is the top-level frame,
+        # so we have to populate locals without symbolic traces
+        for local, value in cur_frame.f_locals.items():
+          self.frame_variables[cur_frame][local] = StackElement(
+            self.convert_stack_elem_to_heap_id(value),
+            opcode, []
+          )
+      else:
+        # TODO(shadaj): pop the args off the stack
+        for local, value in cur_frame.f_locals.items():
+          self.frame_variables[cur_frame][local] = StackElement(
+            self.convert_stack_elem_to_heap_id(value),
+            opcode, []
+          )
+
     if opcode == "JUMP_TARGET":
       self.handle_jump_target(code_id, arg["label"], id_to_orig_bytecode)
-    elif opname[opcode] == "CALL_FUNCTION" and not is_post:
-      self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - len(stack)]
+    elif opname[opcode] == "CALL_FUNCTION":
+      if not is_post:
+        self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - len(stack)]
 
-      function_args_id_stack = self.convert_stack_to_heap_id(stack)
+        function_args_id_stack = self.convert_stack_to_heap_id(stack)
+        self.print_stack_indent()
+        print(
+          "begin function call - function:",
+          self.stringify_maybe_object_id(function_args_id_stack[0]),
+          "on args",
+          "(" + ", ".join(map(self.stringify_maybe_object_id, stack[1:])) + ")"
+        )
+
+        self.function_call_stack.append(function_args_id_stack[0])
+      else:
+        function_args_id_stack = self.convert_stack_to_heap_id(stack)
+        called_function = self.function_call_stack[-1]
+        del self.function_call_stack[-1]
+
+        # TODO(shadaj): the return value should be already there as long as the target function is instrumented / modeled
+        self.symbolic_stack.append(StackElement(
+          function_args_id_stack[0],
+          opcode,
+          [] # TODO(shadaj): return value does have dependencies
+        ))
+
+        self.print_stack_indent()
+        print(
+          "end function call - function:",
+          self.stringify_maybe_object_id(called_function),
+          "result:",
+          self.stringify_maybe_object_id(function_args_id_stack[0])
+        )
+    elif opname[opcode] == "RETURN_VALUE":
+      self.frame_stack.pop()
       self.print_stack_indent()
-      print(
-        "begin function call - function:",
-        self.stringify_maybe_object_id(function_args_id_stack[0]),
-        "on args",
-        "(" + ", ".join(map(self.stringify_maybe_object_id, stack[1:])) + ")"
-      )
-
-      self.function_call_stack.append(function_args_id_stack[0])
-    elif opname[opcode] == "CALL_FUNCTION" and is_post:
-      function_args_id_stack = self.convert_stack_to_heap_id(stack)
-      called_function = self.function_call_stack[-1]
-      del self.function_call_stack[-1]
-
-      # TODO(shadaj): the return value should be already there as long as the target function is instrumented / modeled
-      self.symbolic_stack.append(StackElement(
-        function_args_id_stack[0],
-        opcode,
-        [] # TODO(shadaj): return value does have dependencies
-      ))
-
-      self.print_stack_indent()
-      print(
-        "end function call - function:",
-        self.stringify_maybe_object_id(called_function),
-        "result:",
-        self.stringify_maybe_object_id(function_args_id_stack[0])
-      )
+      print(f"return value -> {self.stringify_maybe_object_id(stack[0])}")
+      if len(self.frame_stack) > 0 and not self.frame_stack[-1] == cur_frame.f_back:
+        # this frame was called from a non-instrumented frame, so we drop the return value
+        # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
+        self.symbolic_stack.pop()
+      else:
+        # TODO(shadaj): do not pop here once we can handle the return value in the parent
+        if len(self.frame_stack) > 0:
+          self.symbolic_stack.pop()
     else:
       object_id_stack = self.convert_stack_to_heap_id(stack)
 
@@ -168,6 +209,8 @@ class StackTrackingReceiver(EventReceiver):
           )
       elif opname[opcode] == "POP_TOP" or opname[opcode] == "POP_JUMP_IF_FALSE" or opname[opcode] == "POP_JUMP_IF_TRUE":
         if not is_post:
+          self.print_stack_indent()
+          print(f"pop top -> {self.stringify_maybe_object_id(stack[0])}")
           self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 1]
       elif opname[opcode] == "ROT_TWO":
         tos = self.symbolic_stack.pop()
@@ -181,20 +224,23 @@ class StackTrackingReceiver(EventReceiver):
         print(
           "load const ->", self.stringify_maybe_object_id(object_id_stack[0])
         )
+      elif opname[opcode] == "LOAD_GLOBAL":
+        # TODO(shadaj): implement correctly
+        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
+
+        self.print_stack_indent()
+        print(
+          "load global ->", self.stringify_maybe_object_id(object_id_stack[0])
+        )
       elif opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
-        cur_frame = get_instrumented_program_frame()
-        if cur_frame in self.frame_variables and arg in self.frame_variables[cur_frame]:
+        if arg in self.frame_variables[cur_frame]:
           if not self.frame_variables[cur_frame][arg].concrete == object_id_stack[0]:
             raise Exception(
               "Variable " + arg + " has changed from " + \
                 self.stringify_maybe_object_id(self.frame_variables[cur_frame][arg].concrete) + \
                   " to " + self.stringify_maybe_object_id(object_id_stack[0]))
         else:
-          if cur_frame not in self.frame_variables:
-            self.frame_variables[cur_frame] = {}
-          self.print_stack_indent()
-          print("WARNING: creating a fresh stack element for previously unseen variable")
-          self.frame_variables[cur_frame][arg] = StackElement(object_id_stack[0], opcode, [])
+          raise Exception(f"Cannot create tracing value for previously unseen variable {arg} in {self.stringify_frame_id(self.frame_tracking.get_object_id(cur_frame))}")
 
         self.symbolic_stack.append(self.frame_variables[cur_frame][arg])
 

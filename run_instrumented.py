@@ -10,11 +10,13 @@ patcher.install()
 from demos.quicksort import quick1
 
 import random
-arr = [random.randint(0, 10) for i in range(10)]
+arr = [random.randint(0, 10) for i in range(2)]
 print(arr)
-with StackTrackingReceiver():
+receiver = StackTrackingReceiver()
+with receiver:
   quick1(arr)
 print(arr)
+print([receiver.stringify_maybe_object_id(x.concrete) for x in receiver.symbolic_stack])
 
 # import numpy as np
 # arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])

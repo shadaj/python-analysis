@@ -58,10 +58,12 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "STORE_ATTR": 2,
   "STORE_SUBSCR": 3,
   "LOAD_ATTR": 1,
+  "POP_TOP": 1,
   "POP_JUMP_IF_TRUE": 1,
   "POP_JUMP_IF_FALSE": 1,
   "ROT_TWO": 2,
-  "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1 # capture all args as well as the function
+  "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1, # capture all args as well as the function
+  "RETURN_VALUE": 1
 }
 
 # Opcodes to instrument after they run
@@ -72,8 +74,8 @@ post_opcode_instrument = {
   "LOAD_CLOSURE": 1,
   "LOAD_ATTR": 1,
   "LOAD_CONST": 1,
+  "LOAD_GLOBAL": 1,
   "CALL_FUNCTION": 1, # capture the return value
-  "POP_TOP": 0
 }
 
 for op in binary_ops:
