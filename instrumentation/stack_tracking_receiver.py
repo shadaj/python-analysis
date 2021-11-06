@@ -18,9 +18,11 @@ class StackElement(object):
 
 class FunctionCallHandled(object):
   return_on_stack: bool
+  arg_mapping: Dict[str, StackElement]
 
-  def __init__(self) -> None:
+  def __init__(self, arg_mapping: Dict[str, StackElement]) -> None:
     self.return_on_stack = False
+    self.arg_mapping = arg_mapping
 
 # newtype to track object IDs
 class ObjectId(object):
@@ -151,17 +153,23 @@ class StackTrackingReceiver(EventReceiver):
             opcode, []
           )
       else:
-        # TODO(shadaj): pop the args off the stack
+        for name, value in self.pre_op_stack[-1].arg_mapping.items():
+          self.frame_variables[cur_frame][name] = value
+
+        # handle default arguments
         for local, value in cur_frame.f_locals.items():
-          self.frame_variables[cur_frame][local] = StackElement(
-            self.convert_stack_elem_to_heap_id(value),
-            opcode, []
-          )
+          if local not in self.frame_variables[cur_frame]:
+            self.frame_variables[cur_frame][local] = StackElement(
+              self.convert_stack_elem_to_heap_id(value),
+              opcode,
+              [] # TODO(shadaj): handle mutable default arguments
+            )
 
     if opcode == "JUMP_TARGET":
       self.handle_jump_target(code_id, arg["label"], id_to_orig_bytecode)
     elif opname[opcode] == "CALL_FUNCTION":
       if not is_post:
+        symbolic_stack_args = self.symbolic_stack[len(self.symbolic_stack) - len(stack) + 1:]
         self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - len(stack)]
 
         function_args_id_stack = self.convert_stack_to_heap_id(stack)
@@ -173,8 +181,19 @@ class StackTrackingReceiver(EventReceiver):
           "(" + ", ".join(map(self.stringify_maybe_object_id, stack[1:])) + ")"
         )
 
+        args_mapping = {}
+        function_object = self.heap_object_tracking.get_by_id(function_args_id_stack[0].id)
+
+        if hasattr(function_object, "__code__"):
+          code_object = function_object.__code__
+          positional_arg_names = list(code_object.co_varnames)[:code_object.co_argcount]
+          # TODO(shadaj): handle non-positional calls
+          for i, arg in enumerate(positional_arg_names):
+            if i < len(symbolic_stack_args):
+              args_mapping[arg] = symbolic_stack_args[i]
+
         self.function_call_stack.append(function_args_id_stack[0])
-        self.pre_op_stack.append(FunctionCallHandled())
+        self.pre_op_stack.append(FunctionCallHandled(args_mapping))
       else:
         function_args_id_stack = self.convert_stack_to_heap_id(stack)
         called_function = self.function_call_stack.pop()
