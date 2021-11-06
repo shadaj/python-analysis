@@ -1,3 +1,7 @@
+def quicksort_return(a):
+	quick1(a)
+	return a
+
 def quick1(a, st=0, en=None):
 	if en is None: en=len(a)
 	if en-st <= 1:

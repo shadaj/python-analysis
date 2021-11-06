@@ -7,15 +7,14 @@ from instrumentation.exec import exec_instrumented
 patcher = PatchingPathFinder()
 patcher.install()
 
-from demos.quicksort import quick1
+from demos.quicksort import quicksort_return
 
 import random
-arr = [random.randint(0, 10) for i in range(2)]
+arr = [random.randint(0, 10) for i in range(10)]
 print(arr)
 receiver = StackTrackingReceiver()
 with receiver:
-  quick1(arr)
-print(arr)
+  quicksort_return(arr)
 print([receiver.stringify_maybe_object_id(x.concrete) for x in receiver.symbolic_stack])
 
 # import numpy as np
