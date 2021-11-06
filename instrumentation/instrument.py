@@ -39,7 +39,9 @@ binary_ops = [
   "INPLACE_RSHIFT",
   "INPLACE_AND",
   "INPLACE_XOR",
-  "INPLACE_OR"
+  "INPLACE_OR",
+
+  "MAKE_FUNCTION" # TODO(shadaj): can take more than two args based on flags
 ]
 
 unary_ops = [

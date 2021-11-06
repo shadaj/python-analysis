@@ -114,6 +114,23 @@ class StackTrackingReceiver(EventReceiver):
       cell = fn_object.__closure__[var_index]
       return self.cell_to_frame[self.heap_object_tracking.get_object_id(cell)]
 
+  def load_onto_symbolic_stack(self, object_id_stack: List[Any], resolved_frame: FrameType, var_name: str) -> None:
+    if var_name in self.frame_variables[resolved_frame]:
+      if not self.frame_variables[resolved_frame][var_name].concrete == object_id_stack[0]:
+        raise Exception(
+          "Variable " + var_name + " has changed from " + \
+            self.stringify_maybe_object_id(self.frame_variables[resolved_frame][var_name].concrete) + \
+              " to " + self.stringify_maybe_object_id(object_id_stack[0]))
+    else:
+      raise Exception(f"Cannot create tracing value for previously unseen variable {var_name} in {self.stringify_frame_id(self.frame_tracking.get_object_id(resolved_frame))}")
+
+    self.symbolic_stack.append(self.frame_variables[resolved_frame][var_name])
+
+  def store_from_symbolic_stack(self, resolved_frame: FrameType, var_name: str) -> None:
+    if resolved_frame not in self.frame_variables:
+      self.frame_variables[resolved_frame] = {}
+    self.frame_variables[resolved_frame][var_name] = self.symbolic_stack.pop()
+
   def on_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
     if self.already_in_receiver:
       return
@@ -241,16 +258,7 @@ class StackTrackingReceiver(EventReceiver):
           "load global ->", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
-        if arg in self.frame_variables[cur_frame]:
-          if not self.frame_variables[cur_frame][arg].concrete == object_id_stack[0]:
-            raise Exception(
-              "Variable " + arg + " has changed from " + \
-                self.stringify_maybe_object_id(self.frame_variables[cur_frame][arg].concrete) + \
-                  " to " + self.stringify_maybe_object_id(object_id_stack[0]))
-        else:
-          raise Exception(f"Cannot create tracing value for previously unseen variable {arg} in {self.stringify_frame_id(self.frame_tracking.get_object_id(cur_frame))}")
-
-        self.symbolic_stack.append(self.frame_variables[cur_frame][arg])
+        self.load_onto_symbolic_stack(object_id_stack, cur_frame, arg)
 
         self.print_stack_indent()
         print(
@@ -260,9 +268,8 @@ class StackTrackingReceiver(EventReceiver):
         )
       elif opname[opcode] == "STORE_NAME" or opname[opcode] == "STORE_FAST":
         cur_frame = get_instrumented_program_frame()
-        if cur_frame not in self.frame_variables:
-          self.frame_variables[cur_frame] = {}
-        self.frame_variables[cur_frame][arg] = self.symbolic_stack.pop()
+        
+        self.store_from_symbolic_stack(cur_frame, arg)
 
         self.print_stack_indent()
         print(
@@ -293,10 +300,15 @@ class StackTrackingReceiver(EventReceiver):
             " in " + self.stringify_frame_id(self.cell_to_frame[object_id_stack[0].id]) +
             " -> " + self.stringify_maybe_object_id(object_id_stack[0])
           )
+        
+        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
       elif opname[opcode] == "LOAD_DEREF":
         cur_frame = get_instrumented_program_frame()
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
+
+        self.load_onto_symbolic_stack(object_id_stack, resolved_frame, var_name)
+
         self.print_stack_indent()
         print(
           "load", var_name,
@@ -307,6 +319,9 @@ class StackTrackingReceiver(EventReceiver):
         cur_frame = get_instrumented_program_frame()
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
+
+        self.store_from_symbolic_stack(resolved_frame, var_name)
+
         self.print_stack_indent()
         print(
           "store", var_name,
@@ -328,11 +343,17 @@ class StackTrackingReceiver(EventReceiver):
   def check_symbolic_stack(self, object_id_stack: List[Any], opcode: int) -> None:
     for i, e in enumerate(object_id_stack):
       index_from_end = i - len(object_id_stack)
-      if not self.symbolic_stack[index_from_end].concrete == e:
+      try:
+        if not self.symbolic_stack[index_from_end].concrete == e:
+          print(opname[opcode])
+          print("symbolic:", [self.stringify_maybe_object_id(e.concrete) for e in self.symbolic_stack])
+          print("concrete:", [self.stringify_maybe_object_id(e) for e in object_id_stack])
+          raise Exception(
+            "Stack element " + str(i) + " is symbolically " + \
+              self.stringify_maybe_object_id(self.symbolic_stack[index_from_end].concrete) + \
+                " but concretely " + self.stringify_maybe_object_id(e))
+      except IndexError:
         print(opname[opcode])
-        print([self.stringify_maybe_object_id(e.concrete) for e in self.symbolic_stack])
-        print([self.stringify_maybe_object_id(e) for e in object_id_stack])
-        raise Exception(
-          "Stack element " + str(i) + " is symbolically " + \
-            self.stringify_maybe_object_id(self.symbolic_stack[index_from_end].concrete) + \
-              " but concretely " + self.stringify_maybe_object_id(e))
+        print("symbolic:", [self.stringify_maybe_object_id(e.concrete) for e in self.symbolic_stack])
+        print("concrete:", [self.stringify_maybe_object_id(e) for e in object_id_stack])
+        raise Exception("Stack element at index " + str(i) + " is not in symbolic stack")

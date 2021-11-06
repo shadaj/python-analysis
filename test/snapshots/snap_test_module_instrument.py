@@ -25,6 +25,23 @@ snapshots['test_calls_to_module_function 1'] = [
         ]
     },
     {
+        'arg': 0,
+        'is_post': False,
+        'opcode': 'MAKE_FUNCTION',
+        'stack': [
+            '<code object other_func at SOME ADDRESS, file "some-file", line 1>',
+            'other_func'
+        ]
+    },
+    {
+        'arg': 0,
+        'is_post': True,
+        'opcode': 'MAKE_FUNCTION',
+        'stack': [
+            '<function other_func at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 'other_func',
         'is_post': False,
         'opcode': 'STORE_NAME',
@@ -49,6 +66,23 @@ snapshots['test_calls_to_module_function 1'] = [
         ]
     },
     {
+        'arg': 0,
+        'is_post': False,
+        'opcode': 'MAKE_FUNCTION',
+        'stack': [
+            '<code object hello at SOME ADDRESS, file "some-file", line 5>',
+            'hello'
+        ]
+    },
+    {
+        'arg': 0,
+        'is_post': True,
+        'opcode': 'MAKE_FUNCTION',
+        'stack': [
+            '<function hello at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 'hello',
         'is_post': False,
         'opcode': 'STORE_NAME',
@@ -60,6 +94,14 @@ snapshots['test_calls_to_module_function 1'] = [
         'arg': None,
         'is_post': True,
         'opcode': 'LOAD_CONST',
+        'stack': [
+            'None'
+        ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
         'stack': [
             'None'
         ]
@@ -78,6 +120,14 @@ snapshots['test_calls_to_module_function 1'] = [
         'opcode': 'STORE_FAST',
         'stack': [
             '1'
+        ]
+    },
+    {
+        'arg': 'other_func',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function other_func at SOME ADDRESS>'
         ]
     },
     {
@@ -108,6 +158,14 @@ snapshots['test_calls_to_module_function 1'] = [
         'arg': 'out',
         'is_post': True,
         'opcode': 'LOAD_FAST',
+        'stack': [
+            '2'
+        ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
         'stack': [
             '2'
         ]
@@ -176,6 +234,14 @@ snapshots['test_calls_to_module_function 1'] = [
         'stack': [
             '3'
         ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '3'
+        ]
     }
 ]
 
@@ -188,6 +254,24 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
             '''[[1 0 0]
  [0 1 0]
  [0 0 1]]'''
+        ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '''(array([[1, 0, 0],
+       [0, 1, 0],
+       [0, 0, 1]]),)'''
+        ]
+    },
+    {
+        'arg': '_makearray',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _makearray at SOME ADDRESS>'
         ]
     },
     {
@@ -212,6 +296,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'asarray',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function asarray at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 'a',
         'is_post': True,
         'opcode': 'LOAD_FAST',
@@ -230,6 +322,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
             '''[[1 0 0]
  [0 1 0]
  [0 0 1]]'''
+        ]
+    },
+    {
+        'arg': 'array',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<built-in function array>'
         ]
     },
     {
@@ -278,6 +378,16 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '''[[1 0 0]
+ [0 1 0]
+ [0 0 1]]'''
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -295,6 +405,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
             '''[[1 0 0]
  [0 1 0]
  [0 0 1]]'''
+        ]
+    },
+    {
+        'arg': 'getattr',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<built-in function getattr>'
         ]
     },
     {
@@ -391,6 +509,16 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '''(array([[1, 0, 0],
+       [0, 1, 0],
+       [0, 0, 1]]), <built-in method __array_prepare__ of numpy.ndarray object at SOME ADDRESS>)'''
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -416,6 +544,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'STORE_FAST',
         'stack': [
             '<built-in method __array_prepare__ of numpy.ndarray object at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': '_assert_stacked_2d',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _assert_stacked_2d at SOME ADDRESS>'
         ]
     },
     {
@@ -556,6 +692,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            'None'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -565,9 +709,18 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
     },
     {
         'arg': None,
-        'is_post': True,
+        'is_post': False,
         'opcode': 'POP_TOP',
         'stack': [
+            'None'
+        ]
+    },
+    {
+        'arg': '_assert_stacked_square',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _assert_stacked_square at SOME ADDRESS>'
         ]
     },
     {
@@ -765,6 +918,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            'None'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -774,9 +935,18 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
     },
     {
         'arg': None,
-        'is_post': True,
+        'is_post': False,
         'opcode': 'POP_TOP',
         'stack': [
+            'None'
+        ]
+    },
+    {
+        'arg': '_assert_finite',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _assert_finite at SOME ADDRESS>'
         ]
     },
     {
@@ -833,6 +1003,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'isfinite',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<ufunc 'isfinite'>"
+        ]
+    },
+    {
         'arg': 'a',
         'is_post': True,
         'opcode': 'LOAD_FAST',
@@ -861,6 +1039,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
             '''[[ True  True  True]
  [ True  True  True]
  [ True  True  True]]'''
+        ]
+    },
+    {
+        'arg': 'umr_all',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<built-in method reduce of numpy.ufunc object at SOME ADDRESS>'
         ]
     },
     {
@@ -929,6 +1115,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            'True'
+        ]
+    },
+    {
         'arg': {
             'label': 4
         },
@@ -956,6 +1150,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            'None'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -965,9 +1167,18 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
     },
     {
         'arg': None,
-        'is_post': True,
+        'is_post': False,
         'opcode': 'POP_TOP',
         'stack': [
+            'None'
+        ]
+    },
+    {
+        'arg': '_commonType',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _commonType at SOME ADDRESS>'
         ]
     },
     {
@@ -989,6 +1200,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
             '''[[1 0 0]
  [0 1 0]
  [0 0 1]]'''
+        ]
+    },
+    {
+        'arg': 'single',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'numpy.float32'>"
         ]
     },
     {
@@ -1048,6 +1267,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'issubclass',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<built-in function issubclass>'
+        ]
+    },
+    {
         'arg': 'a',
         'is_post': True,
         'opcode': 'LOAD_FAST',
@@ -1092,6 +1319,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'inexact',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'numpy.inexact'>"
+        ]
+    },
+    {
         'arg': 2,
         'is_post': False,
         'opcode': 'CALL_FUNCTION',
@@ -1123,6 +1358,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'arrive_at': 49
     },
     {
+        'arg': 'double',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'numpy.float64'>"
+        ]
+    },
+    {
         'arg': 'rt',
         'is_post': False,
         'opcode': 'STORE_FAST',
@@ -1137,6 +1380,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'arg': 'rt',
         'is_post': True,
         'opcode': 'LOAD_FAST',
+        'stack': [
+            "<class 'numpy.float64'>"
+        ]
+    },
+    {
+        'arg': 'double',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
         'stack': [
             "<class 'numpy.float64'>"
         ]
@@ -1170,6 +1421,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'POP_JUMP_IF_FALSE',
         'stack': [
             'True'
+        ]
+    },
+    {
+        'arg': 'double',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'numpy.float64'>"
         ]
     },
     {
@@ -1211,6 +1470,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'arrive_at': 72
     },
     {
+        'arg': 'double',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'numpy.float64'>"
+        ]
+    },
+    {
         'arg': 't',
         'is_post': False,
         'opcode': 'STORE_FAST',
@@ -1238,6 +1505,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            "(<class 'numpy.float64'>, <class 'numpy.float64'>)"
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -1262,12 +1537,44 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'get_linalg_error_extobj',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function get_linalg_error_extobj at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': '_raise_linalgerror_eigenvalues_nonconvergence',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _raise_linalgerror_eigenvalues_nonconvergence at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': False,
         'opcode': 'CALL_FUNCTION',
         'stack': [
             '<function get_linalg_error_extobj at SOME ADDRESS>',
             '<function _raise_linalgerror_eigenvalues_nonconvergence at SOME ADDRESS>'
+        ]
+    },
+    {
+        'arg': 'list',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'list'>"
+        ]
+    },
+    {
+        'arg': '_linalg_error_extobj',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '[8192, 1536, None]'
         ]
     },
     {
@@ -1338,6 +1645,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '[8192, 1536, <function _raise_linalgerror_eigenvalues_nonconvergence at SOME ADDRESS>]'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -1351,6 +1666,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'STORE_FAST',
         'stack': [
             '[8192, 1536, <function _raise_linalgerror_eigenvalues_nonconvergence at SOME ADDRESS>]'
+        ]
+    },
+    {
+        'arg': 'isComplexType',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function isComplexType at SOME ADDRESS>'
         ]
     },
     {
@@ -1371,11 +1694,27 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'issubclass',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<built-in function issubclass>'
+        ]
+    },
+    {
         'arg': 't',
         'is_post': True,
         'opcode': 'LOAD_FAST',
         'stack': [
             "<class 'numpy.float64'>"
+        ]
+    },
+    {
+        'arg': 'complexfloating',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'numpy.complexfloating'>"
         ]
     },
     {
@@ -1392,6 +1731,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'arg': 2,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
+        'stack': [
+            'False'
+        ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
         'stack': [
             'False'
         ]
@@ -1434,6 +1781,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'STORE_FAST',
         'stack': [
             'd->D'
+        ]
+    },
+    {
+        'arg': '_umath_linalg',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<module numpy.linalg._umath_linalg>'
         ]
     },
     {
@@ -1498,6 +1853,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'isComplexType',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function isComplexType at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 't',
         'is_post': True,
         'opcode': 'LOAD_FAST',
@@ -1515,11 +1878,27 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 'issubclass',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<built-in function issubclass>'
+        ]
+    },
+    {
         'arg': 't',
         'is_post': True,
         'opcode': 'LOAD_FAST',
         'stack': [
             "<class 'numpy.float64'>"
+        ]
+    },
+    {
+        'arg': 'complexfloating',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'numpy.complexfloating'>"
         ]
     },
     {
@@ -1541,6 +1920,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            'False'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -1556,6 +1943,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'POP_JUMP_IF_TRUE',
         'stack': [
             'False'
+        ]
+    },
+    {
+        'arg': 'all',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function all at SOME ADDRESS>'
         ]
     },
     {
@@ -1637,11 +2032,35 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '(array([ True,  True,  True]), None)'
+        ]
+    },
+    {
+        'arg': '_wrapreduction',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _wrapreduction at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 'a',
         'is_post': True,
         'opcode': 'LOAD_FAST',
         'stack': [
             '[ True  True  True]'
+        ]
+    },
+    {
+        'arg': 'np',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<module numpy>'
         ]
     },
     {
@@ -1727,6 +2146,23 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': 0,
+        'is_post': False,
+        'opcode': 'MAKE_FUNCTION',
+        'stack': [
+            '<code object <dictcomp> at SOME ADDRESS, file "some-file", line 71>',
+            '_wrapreduction.<locals>.<dictcomp>'
+        ]
+    },
+    {
+        'arg': 0,
+        'is_post': True,
+        'opcode': 'MAKE_FUNCTION',
+        'stack': [
+            '<function _wrapreduction.<locals>.<dictcomp> at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 'kwargs',
         'is_post': True,
         'opcode': 'LOAD_FAST',
@@ -1776,6 +2212,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'LOAD_FAST',
         'stack': [
             '<no value>'
+        ]
+    },
+    {
+        'arg': 'np',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<module numpy>'
         ]
     },
     {
@@ -1832,6 +2276,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'arrive_at': 17
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '{}'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -1845,6 +2297,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'STORE_FAST',
         'stack': [
             '{}'
+        ]
+    },
+    {
+        'arg': 'type',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "<class 'type'>"
         ]
     },
     {
@@ -1870,6 +2330,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'CALL_FUNCTION',
         'stack': [
             "<class 'numpy.ndarray'>"
+        ]
+    },
+    {
+        'arg': 'mu',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<module numpy.core.multiarray>'
         ]
     },
     {
@@ -1987,6 +2455,22 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            'True'
+        ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            'True'
+        ]
+    },
+    {
         'arg': 1,
         'is_post': True,
         'opcode': 'CALL_FUNCTION',
@@ -2037,6 +2521,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': '_realType',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            '<function _realType at SOME ADDRESS>'
+        ]
+    },
+    {
         'arg': 'result_t',
         'is_post': True,
         'opcode': 'LOAD_FAST',
@@ -2054,6 +2546,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         ]
     },
     {
+        'arg': '_real_types_map',
+        'is_post': True,
+        'opcode': 'LOAD_GLOBAL',
+        'stack': [
+            "{<class 'numpy.float32'>: <class 'numpy.float32'>, <class 'numpy.float64'>: <class 'numpy.float64'>, <class 'numpy.complex64'>: <class 'numpy.float32'>, <class 'numpy.complex128'>: <class 'numpy.float64'>}"
+        ]
+    },
+    {
         'arg': 't',
         'is_post': True,
         'opcode': 'LOAD_FAST',
@@ -2065,6 +2565,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'arg': 'default',
         'is_post': True,
         'opcode': 'LOAD_FAST',
+        'stack': [
+            "<class 'numpy.float64'>"
+        ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
         'stack': [
             "<class 'numpy.float64'>"
         ]
@@ -2136,6 +2644,14 @@ snapshots['test_calls_to_numpy_function (1, 3, 7)'] = [
         'opcode': 'LOAD_CONST',
         'stack': [
             "('copy',)"
+        ]
+    },
+    {
+        'arg': None,
+        'is_post': False,
+        'opcode': 'RETURN_VALUE',
+        'stack': [
+            '[1. 1. 1.]'
         ]
     }
 ]
