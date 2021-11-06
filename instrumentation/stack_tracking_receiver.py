@@ -11,10 +11,16 @@ from typing import Any, Dict, List, Union
 from typing_extensions import Literal
 
 class StackElement(object):
-  def __init__(self, concrete: Any, opcode: int, deps: List["StackElement"]):
+  def __init__(self, concrete: Any, opcode: Union[Literal["JUMP_TARGET"], int], deps: List["StackElement"]):
     self.concrete = concrete
     self.opcode = opcode
     self.deps = deps
+
+class FunctionCallHandled(object):
+  return_on_stack: bool
+
+  def __init__(self) -> None:
+    self.return_on_stack = False
 
 # newtype to track object IDs
 class ObjectId(object):
@@ -151,17 +157,20 @@ class StackTrackingReceiver(EventReceiver):
         )
 
         self.function_call_stack.append(function_args_id_stack[0])
+        self.pre_op_stack.append(FunctionCallHandled())
       else:
         function_args_id_stack = self.convert_stack_to_heap_id(stack)
-        called_function = self.function_call_stack[-1]
-        del self.function_call_stack[-1]
+        called_function = self.function_call_stack.pop()
+        return_on_stack = self.pre_op_stack.pop().return_on_stack
 
-        # TODO(shadaj): the return value should be already there as long as the target function is instrumented / modeled
-        self.symbolic_stack.append(StackElement(
-          function_args_id_stack[0],
-          opcode,
-          [] # TODO(shadaj): return value does have dependencies
-        ))
+        if not return_on_stack:
+          self.print_stack_indent()
+          print("handling return from uninstrumented function")
+          self.symbolic_stack.append(StackElement(
+            function_args_id_stack[0],
+            opcode,
+            [] # TODO(shadaj): add approximate dependencies
+          ))
 
         self.print_stack_indent()
         print(
@@ -174,14 +183,13 @@ class StackTrackingReceiver(EventReceiver):
       self.frame_stack.pop()
       self.print_stack_indent()
       print(f"return value -> {self.stringify_maybe_object_id(stack[0])}")
-      if len(self.frame_stack) > 0 and not self.frame_stack[-1] == cur_frame.f_back:
-        # this frame was called from a non-instrumented frame, so we drop the return value
-        # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
-        self.symbolic_stack.pop()
-      else:
-        # TODO(shadaj): do not pop here once we can handle the return value in the parent
-        if len(self.frame_stack) > 0:
+      # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
+      if len(self.frame_stack) > 0:
+        if not self.frame_stack[-1] == cur_frame.f_back:
+          # this frame was called from a non-instrumented frame, so we drop the return value
           self.symbolic_stack.pop()
+        else:
+          self.pre_op_stack[-1].return_on_stack = True
     else:
       object_id_stack = self.convert_stack_to_heap_id(stack)
 
