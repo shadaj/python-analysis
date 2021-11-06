@@ -30,24 +30,24 @@ class StackElement(object):
     self.cow_latest_value = cow_latest_value
     self.collection_elems = collection_elems
   
-  def collection_updated(self, i, value) -> "StackElement":
+  def collection_updated(self, i: Any, value: "StackElement") -> "StackElement":
     if isinstance(self.collection_elems, list):
       # elems_copy = [StackElement(
       #   e.concrete,
       #   opmap["BINARY_SUBSCR"],
       #   [self, i],
       # ) for i, e in enumerate(self.collection_elems)]
-      elems_copy = [e for i, e in enumerate(self.collection_elems)]
-      elems_copy[i] = value
-      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy)
+      elems_copy_list = [e for i, e in enumerate(self.collection_elems)]
+      elems_copy_list[i] = value
+      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy_list)
     elif isinstance(self.collection_elems, dict):
-      elems_copy = {k: StackElement(
+      elems_copy_dict = {k: StackElement(
         e.concrete,
         opmap["BINARY_SUBSCR"],
         [self, k],
       ) for k, e in self.collection_elems.items()}
-      elems_copy[i] = value
-      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy)
+      elems_copy_dict[i] = value
+      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy_dict)
     else:
       raise Exception("Invalid collection type")
 
@@ -367,7 +367,7 @@ class StackTrackingReceiver(EventReceiver):
           collection, index = self.pre_op_stack.pop()
 
           index_reified = index.concrete
-          if collection.is_cow_pointer:
+          if collection.is_cow_pointer and collection.cow_latest_value and collection.cow_latest_value.collection_elems:
             loaded_symbolic = collection.cow_latest_value.collection_elems[index_reified]
             self.symbolic_stack.append(StackElement(
               loaded_symbolic.concrete,
@@ -389,7 +389,7 @@ class StackTrackingReceiver(EventReceiver):
         value = self.symbolic_stack.pop()
 
         index_reified = index.concrete # TODO(shadaj): handle non-integer indices
-        if collection.is_cow_pointer:
+        if collection.is_cow_pointer and collection.cow_latest_value:
           orig_collection = collection.cow_latest_value
           new_collection = orig_collection.collection_updated(index_reified, value)
           collection.cow_latest_value = new_collection
