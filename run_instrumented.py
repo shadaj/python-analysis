@@ -2,6 +2,7 @@ from textwrap import dedent
 from dis import opname
 
 from instrumentation.stack_tracking_receiver import StackTrackingReceiver
+from instrumentation.data_tracing_receiver import DataTracingReceiver
 from instrumentation.module_loader import PatchingPathFinder
 from instrumentation.exec import exec_instrumented
 
@@ -12,9 +13,10 @@ from demos.quicksort import quicksort_return
 import random
 arr = [random.randint(0, 10) for i in range(10)]
 orig_arr = list(arr)
-receiver = StackTrackingReceiver()
-with receiver:
-  quicksort_return(arr)
+receiver = DataTracingReceiver()
+with StackTrackingReceiver():
+  with receiver:
+    quicksort_return(arr)
 
 def pretty_symbolic(symbolic):
   if symbolic.is_cow_pointer:

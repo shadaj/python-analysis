@@ -1,5 +1,16 @@
 from bytecode import Bytecode, Instr
 from types import CodeType
+from typing import Any
+
+# newtype to track object IDs
+class ObjectId(object):
+  def __init__(self, id: int) -> None:
+    self.id = id
+
+  def __eq__(self, other: Any) -> bool:
+    if isinstance(other, ObjectId):
+      return self.id == other.id
+    return False
 
 def clone_bytecode_empty_body(code: Bytecode) -> Bytecode:
   instrumented = Bytecode()
