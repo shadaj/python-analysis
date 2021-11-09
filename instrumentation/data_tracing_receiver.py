@@ -6,7 +6,7 @@ import inspect
 from .event_receiver import EventReceiver
 from .heap_object_tracking import HeapObjectTracker
 from .instrument import binary_ops
-from .util import ObjectId
+from .util import ObjectId, get_instrumented_program_frame
 
 from typing import Any, Dict, List, Union, Optional
 from typing_extensions import Literal
@@ -59,15 +59,6 @@ class FunctionCallHandled(object):
   def __init__(self, arg_mapping: Dict[str, StackElement]) -> None:
     self.return_on_stack = False
     self.arg_mapping = arg_mapping
-
-def get_instrumented_program_frame() -> FrameType:
-  is_next_frame = False
-  for frame_container in inspect.getouterframes(inspect.currentframe()):
-    if is_next_frame:
-      return frame_container.frame
-    elif frame_container.function == "py_instrument_receiver":
-      is_next_frame = True
-  raise Exception("Frame in instrumented code not found")
 
 class DataTracingReceiver(EventReceiver):
   function_call_stack: List[Any]

@@ -6,19 +6,10 @@ import inspect
 from .event_receiver import EventReceiver
 from .heap_object_tracking import HeapObjectTracker
 from .instrument import binary_ops
-from .util import ObjectId
+from .util import ObjectId, get_instrumented_program_frame
 
 from typing import Any, Dict, List, Union, Optional
 from typing_extensions import Literal
-
-def get_instrumented_program_frame() -> FrameType:
-  is_next_frame = False
-  for frame_container in inspect.getouterframes(inspect.currentframe()):
-    if is_next_frame:
-      return frame_container.frame
-    elif frame_container.function == "py_instrument_receiver":
-      is_next_frame = True
-  raise Exception("Frame in instrumented code not found")
 
 class StackTrackingReceiver(EventReceiver):
   loop_stack: List[Any]
@@ -151,8 +142,6 @@ class StackTrackingReceiver(EventReceiver):
           "->", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "STORE_NAME" or opname[opcode] == "STORE_FAST":
-        cur_frame = get_instrumented_program_frame()
-        
         self.print_stack_indent()
         print(
           "store", arg,
@@ -160,7 +149,6 @@ class StackTrackingReceiver(EventReceiver):
           "=", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "LOAD_DEREF":
-        cur_frame = get_instrumented_program_frame()
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
 
@@ -171,7 +159,6 @@ class StackTrackingReceiver(EventReceiver):
           "->", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "STORE_DEREF":
-        cur_frame = get_instrumented_program_frame()
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
 
@@ -203,7 +190,6 @@ class StackTrackingReceiver(EventReceiver):
           "=", self.stringify_maybe_object_id(object_id_stack[0])
         )
       elif opname[opcode] == "LOAD_CLOSURE":
-        cur_frame = get_instrumented_program_frame()
         if not object_id_stack[0].id in self.cell_to_frame:
           self.cell_to_frame[object_id_stack[0].id] = self.frame_tracking.get_object_id(cur_frame)
           self.print_stack_indent()
@@ -235,6 +221,5 @@ class StackTrackingReceiver(EventReceiver):
         print("UNKNOWN OPCODE:")
         self.print_stack_indent()
         print("stack:", stack, "| opcode:", opname[opcode], "| arg:", arg, "| orig op:", id_to_orig_bytecode[code_id][opindex])
-        # raise NotImplementedError()
 
     self.already_in_receiver = False

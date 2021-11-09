@@ -20,7 +20,7 @@ class EventReceiver(object):
 _active_receivers: List[EventReceiver] = []
 
 def add_receiver(receiver: EventReceiver) -> Callable[[], None]:
-  _active_receivers.append(receiver)
+  _active_receivers.insert(0, receiver)
   return lambda: _active_receivers.remove(receiver)
 
 def call_all_receivers(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
