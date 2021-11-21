@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from dis import opname, opmap
+from sys import version
 from types import FrameType
 from bytecode import Bytecode
 import inspect
@@ -8,49 +11,78 @@ from .heap_object_tracking import HeapObjectTracker
 from .instrument import binary_ops
 from .util import ObjectId, get_instrumented_program_frame
 
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List, Tuple, Union, Optional
 from typing_extensions import Literal
 
-class StackElement(object):
-  is_cow_pointer: bool
-  cow_latest_value: Optional["StackElement"]
-  collection_elems: Optional[Union[List["StackElement"], Dict["StackElement", "StackElement"]]]
+def add_dependency(child: Union[SymbolicElement, StackElement], parent: Union[SymbolicElement, StackElement]) -> None:
+  print("New dependency: ")
+  print("Child: ", str(child))
+  print("Parent: ", str(parent))
+  child.heap_elem = parent.heap_elem
+  child.version = 1 + max(child.version, parent.version)
 
-  def __init__(
-    self,
-    concrete: Any, opcode: Union[Literal["JUMP_TARGET"], int],
-    deps: List["StackElement"],
-    is_cow_pointer: bool = False,
-    cow_latest_value: Optional["StackElement"] = None,
-    collection_elems: Optional[Union[List["StackElement"], Dict["StackElement", "StackElement"]]] = None
-  ):
-    self.concrete = concrete
-    self.opcode = opcode
-    self.deps = deps
-    self.is_cow_pointer = is_cow_pointer
-    self.cow_latest_value = cow_latest_value
-    self.collection_elems = collection_elems
+def add_dependency2(child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement]) -> None:
+  print("New dependency: ")
+  print("Child: ", str(child))
+  print("Parent1: ", str(parent1))
+  print("Parent2: ", str(parent2))
+  child.version = 1 + max(child.version, parent1.version, parent2.version)
+
+object_id_to_heap_element_map: Dict[Union[ObjectId, int, str], HeapElement] = {}
+def getHeapElement(concrete: Any, heap_object_tracker: HeapObjectTracker) -> HeapElement:
+  if heap_object_tracker.is_heap_object(concrete):
+    key = ObjectId(heap_object_tracker.get_object_id(concrete))
+  else:
+    key = concrete
+  if key not in object_id_to_heap_element_map:
+    object_id_to_heap_element_map[key] = HeapElement(concrete, heap_object_tracker)
+  return object_id_to_heap_element_map[key]
   
-  def collection_updated(self, i: Any, value: "StackElement") -> "StackElement":
-    if isinstance(self.collection_elems, list):
-      # elems_copy = [StackElement(
-      #   e.concrete,
-      #   opmap["BINARY_SUBSCR"],
-      #   [self, i],
-      # ) for i, e in enumerate(self.collection_elems)]
-      elems_copy_list = [e for i, e in enumerate(self.collection_elems)]
-      elems_copy_list[i] = value
-      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy_list)
-    elif isinstance(self.collection_elems, dict):
-      elems_copy_dict = {k: StackElement(
-        e.concrete,
-        opmap["BINARY_SUBSCR"],
-        [self, k],
-      ) for k, e in self.collection_elems.items()}
-      elems_copy_dict[i] = value
-      return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy_dict)
+
+class HeapElement(object):
+  object_id: Union[ObjectId, int, str]
+  collection_heap_elems: Optional[Union[List["HeapElement"], Dict["HeapElement", "HeapElement"]]] 
+
+  def __init__(self, concrete: Any, heap_object_tracker: HeapObjectTracker) -> None:
+    assert not isinstance(concrete, HeapElement), "Did not expect a HeapElement here"
+    if heap_object_tracker.is_heap_object(concrete):
+      self.object_id = ObjectId(heap_object_tracker.get_object_id(concrete))
+      if isinstance(concrete, list):
+        self.collection_heap_elems = [getHeapElement(e, heap_object_tracker) for e in concrete]
+      elif isinstance(concrete, dict):
+        raise Exception("Not handled HeapElements for dicts")
     else:
-      raise Exception("Invalid collection type")
+      assert isinstance(concrete, (int, str)), "Unhandled data type"
+      self.object_id = concrete #int or str
+
+class SymbolicElement(object):
+  var_name: str
+  heap_elem: HeapElement
+  version: int
+
+  def __init__(self, var_name: str, elems: Union[HeapElement, StackElement], version = 0) -> None:
+    if isinstance(elems, HeapElement):
+      self.var_name = var_name
+      self.heap_elem = elems
+      self.version = version #Starting version of any symbolic element is zero
+    elif isinstance(elems, StackElement):
+      self.var_name = var_name
+      self.heap_elem = elems.heap_elem 
+      self.version = elems.version 
+    else:
+      raise Exception("Unexpected type")
+
+class StackElement(object):
+  heap_elem: HeapElement
+  version: int
+
+  def __init__(self, elems: Union[HeapElement, SymbolicElement], version = 0) -> None:
+    if isinstance(elems, HeapElement):
+      self.heap_elem = elems
+      self.version = version #Starting version of any symbolic element is zero
+    elif isinstance(elems, SymbolicElement):
+      self.heap_elem = elems.heap_elem
+      self.version = elems.version
 
 class FunctionCallHandled(object):
   return_on_stack: bool
@@ -60,6 +92,7 @@ class FunctionCallHandled(object):
     self.return_on_stack = False
     self.arg_mapping = arg_mapping
 
+
 class DataTracingReceiver(EventReceiver):
   function_call_stack: List[Any]
   heap_object_tracking: HeapObjectTracker
@@ -67,8 +100,9 @@ class DataTracingReceiver(EventReceiver):
   cell_to_frame: Dict[int, Union[FrameType, int]]
   already_in_receiver: bool = False
   symbolic_stack: List[StackElement]
-  frame_variables: Dict[Union[FrameType, int], Dict[str, StackElement]]
-  pre_op_stack: List[Any]
+  frame_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
+  global_variables: Dict[str, SymbolicElement]
+  pre_op_stack: List[Union[FunctionCallHandled, Tuple[StackElement, StackElement]]]
   frame_stack: List[FrameType]
 
   def __init__(self) -> None:
@@ -78,6 +112,7 @@ class DataTracingReceiver(EventReceiver):
     self.cell_to_frame = {}
     self.symbolic_stack = []
     self.frame_variables = {}
+    self.global_variables = {}
     self.pre_op_stack = []
     self.frame_stack = []
     super().__init__()
@@ -91,20 +126,14 @@ class DataTracingReceiver(EventReceiver):
   def stringify_frame_id(self, frame_id: Union[FrameType, int]) -> str:
     return "frame #" + str(frame_id)
 
-  def convert_stack_elem_to_heap_id(self, elem: Any) -> Any:
-    if self.heap_object_tracking.is_heap_object(elem):
-      return ObjectId(self.heap_object_tracking.get_object_id(elem))
-    else:
-      return elem
-
-  def convert_stack_to_heap_id(self, stack: List[Any]) -> List[Any]:
+  def convert_stack_to_heap_id(self, stack: List[Any]) -> List[HeapElement]:
     object_id_stack = []
     for elem in stack:
-      object_id_stack.append(self.convert_stack_elem_to_heap_id(elem))
-
+      object_id_stack.append(getHeapElement(elem, self.heap_object_tracking))
     return object_id_stack
 
   def get_var_reference_frame(self, cur_frame: FrameType, arg: Any) -> Union[FrameType, int]:
+    assert False, "Not tested"
     if "cell" in arg:
       return self.frame_tracking.get_object_id(cur_frame)
     else:
@@ -115,49 +144,9 @@ class DataTracingReceiver(EventReceiver):
       cell = fn_object.__closure__[var_index]
       return self.cell_to_frame[self.heap_object_tracking.get_object_id(cell)]
 
-  def load_onto_symbolic_stack(self, object_id_stack: List[Any], resolved_frame: Union[FrameType, int], var_name: str) -> None:
-    if var_name in self.frame_variables[resolved_frame]:
-      if not self.frame_variables[resolved_frame][var_name].concrete == object_id_stack[0]:
-        raise Exception(
-          "Variable " + var_name + " has changed from " + \
-            self.stringify_maybe_object_id(self.frame_variables[resolved_frame][var_name].concrete) + \
-              " to " + self.stringify_maybe_object_id(object_id_stack[0]))
-    else:
-      raise Exception(f"Cannot create tracing value for previously unseen variable {var_name} in {self.stringify_frame_id(self.frame_tracking.get_object_id(resolved_frame))}")
-
-    self.symbolic_stack.append(self.frame_variables[resolved_frame][var_name])
-
-  def store_from_symbolic_stack(self, resolved_frame: Union[FrameType, int], var_name: str) -> None:
-    if resolved_frame not in self.frame_variables:
-      self.frame_variables[resolved_frame] = {}
-    self.frame_variables[resolved_frame][var_name] = self.symbolic_stack.pop()
-
-  def convert_concrete_to_symbolic(self, concrete_value: Any) -> StackElement:
-    if isinstance(concrete_value, list):
-      heap_id = self.convert_stack_elem_to_heap_id(concrete_value)
-      underlying = StackElement(
-        heap_id,
-        -1,
-        [],
-        collection_elems=[self.convert_concrete_to_symbolic(e) for e in concrete_value],
-      )
-
-      return StackElement(
-        heap_id,
-        -1,
-        [],
-        is_cow_pointer=True,
-        cow_latest_value=underlying,
-      )
-    elif isinstance(concrete_value, dict):
-      raise Exception("TODO(shadaj)")
-    else:
-      return StackElement(
-        self.convert_stack_elem_to_heap_id(concrete_value),
-        -1,
-        []
-      )
-
+  ######################
+  # MAIN EVENT HANDLER #
+  ######################
   def on_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
     if self.already_in_receiver:
       return
@@ -173,16 +162,22 @@ class DataTracingReceiver(EventReceiver):
         # this frame was called from a non-instrumented frame, or is the top-level frame,
         # so we have to populate locals without symbolic traces
         for local, value in cur_frame.f_locals.items():
-          self.frame_variables[cur_frame][local] = self.convert_concrete_to_symbolic(value)
+          valueHeap = getHeapElement(value, self.heap_object_tracking)
+          self.frame_variables[cur_frame][local] = SymbolicElement(local, valueHeap)
       else:
         for name, value in self.pre_op_stack[-1].arg_mapping.items():
-          self.frame_variables[cur_frame][name] = value
+          assert isinstance(value, StackElement), "Expected StackElement Instance"
+          self.frame_variables[cur_frame][name] = SymbolicElement(name, value.heap_elem)
+          #self.frame_variables[cur_frame][name] = StackElementVersion(StackElementFactory.getStackElement(value.fetch().concrete, opcode))
+          add_dependency(self.frame_variables[cur_frame][name], value)
+          #add_dependency_not_on_stack(self.frame_variables[cur_frame][name], value)
 
         # handle default arguments
         for local, value in cur_frame.f_locals.items():
           if local not in self.frame_variables[cur_frame]:
             # TODO(shadaj): handle mutable default arguments
-            self.frame_variables[cur_frame][local] = self.convert_concrete_to_symbolic(value)
+            valueHeap = getHeapElement(value, self.heap_object_tracking)
+            self.frame_variables[cur_frame][local] = SymbolicElement(local, valueHeap)
 
     if opcode == "JUMP_TARGET":
       pass
@@ -194,7 +189,7 @@ class DataTracingReceiver(EventReceiver):
         function_args_id_stack = self.convert_stack_to_heap_id(stack)
 
         args_mapping = {}
-        function_object = self.heap_object_tracking.get_by_id(function_args_id_stack[0].id)
+        function_object = self.heap_object_tracking.get_by_id(function_args_id_stack[0].object_id.id)
 
         if hasattr(function_object, "__code__"):
           code_object = function_object.__code__
@@ -207,16 +202,32 @@ class DataTracingReceiver(EventReceiver):
         self.function_call_stack.append(function_args_id_stack[0])
         self.pre_op_stack.append(FunctionCallHandled(args_mapping))
       else:
-        function_args_id_stack = self.convert_stack_to_heap_id(stack)
+        assert len(stack) == 1, "Expect one return value for any function"
         called_function = self.function_call_stack.pop()
-        return_on_stack = self.pre_op_stack.pop().return_on_stack
+        pre_op_stack_last_element = self.pre_op_stack.pop()
+        return_on_stack = pre_op_stack_last_element.return_on_stack
+        if return_on_stack:
+          return_value_stack_el = self.symbolic_stack[0]
+          assert isinstance(return_value_stack_el, StackElement), "Expected type mismatch"
+        else:
+          # TODO: Dependencies to be added depending on the function itself. Currently this is an approximation might have to be changed
+          return_value_heap = getHeapElement(stack[0],self.heap_object_tracking)
+          return_value_stack_el = StackElement(return_value_heap)
+          #StackElementVersion(StackElementFactory.getStackElement(function_ret_stack[0], opcode))
+          self.symbolic_stack.append(return_value_stack_el)
+          #self.symbolic_stack.append(return_value_symbolic)
 
-        if not return_on_stack:
-          self.symbolic_stack.append(StackElement(
-            function_args_id_stack[0],
-            opcode,
-            [] # TODO(shadaj): add approximate dependencies
-          ))
+        # TODO: Add Dependencie?
+        # if not(stack[0] is None):
+        #   add_dependency(return_value_stack_el, )
+
+        # if not return_on_stack:
+        #   assert False, "The un-instrumentable function decides the dependencies here, need to handle on per-function basis"
+        #   self.symbolic_stack.append(StackElement(
+        #     function_args_id_stack[0],
+        #     opcode,
+        #     [] # TODO(shadaj): add approximate dependencies
+        #   ))
     elif opname[opcode] == "RETURN_VALUE":
       self.frame_stack.pop()
       # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
@@ -241,19 +252,48 @@ class DataTracingReceiver(EventReceiver):
         self.symbolic_stack.append(tos)
         self.symbolic_stack.append(tos1)
       elif opname[opcode] == "LOAD_CONST":
-        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
+        assert is_post
+        assert len(stack) == 1, "Only one const loaded at a time"
+        self.symbolic_stack.append(StackElement(object_id_stack[0]))
+        # NO REAL NEED FOR A NAME HERE AS IT IS JUST A CONST
       elif opname[opcode] == "LOAD_GLOBAL":
         # TODO(shadaj): implement correctly
-        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
+        assert is_post
+        if arg not in self.global_variables:
+          self.global_variables[arg] = SymbolicElement("\'g", object_id_stack[0])
+        assert isinstance(self.global_variables[arg], SymbolicElement), "Type mismatch"
+        stackVal = StackElement(self.global_variables[arg])
+        self.symbolic_stack.append(stackVal)
+        add_dependency(stackVal, self.global_variables[arg])
       elif opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
-        self.load_onto_symbolic_stack(object_id_stack, cur_frame, arg)
+        assert is_post
+        assert isinstance(self.frame_variables[cur_frame][arg], SymbolicElement), "Type mismatch"
+        stackVal = StackElement(self.frame_variables[cur_frame][arg])
+        self.symbolic_stack.append(stackVal)
+        add_dependency(stackVal, self.frame_variables[cur_frame][arg])
+        assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
       elif opname[opcode] == "STORE_NAME" or opname[opcode] == "STORE_FAST":
-        self.store_from_symbolic_stack(cur_frame, arg)
+        #######
+        # TODO: AAYAN: IF LIST + SLICE, NEW STACKELEMENTS MAY BE INTRODUCED
+        # ELSE: JUST ADD DEPENDENCY FROM LOADED SYMBOLIC LHS TO SYMBOLIC RHS
+        #######
+        #### IF A COLLECTION, CHANGE THE THING IT IS POINTING TO
+        assert not is_post
+        stackVal = self.symbolic_stack.pop()
+        if arg not in self.frame_variables[cur_frame]:
+          self.frame_variables[cur_frame][arg] = SymbolicElement(arg, stackVal.heap_elem)
+        symbVal = self.frame_variables[cur_frame][arg]
+        assert isinstance(symbVal, SymbolicElement), "Type mismatch"
+        assert isinstance(stackVal, StackElement), "Type mismatch"
+        symbVal.heap_elem = stackVal.heap_elem
+        add_dependency(symbVal, stackVal)
       elif opname[opcode] == "LOAD_DEREF":
+        assert False, "Havent checked"
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
         self.load_onto_symbolic_stack(object_id_stack, resolved_frame, var_name)
       elif opname[opcode] == "STORE_DEREF":
+        assert False, "Havent Checked"
         resolved_frame = self.get_var_reference_frame(cur_frame, arg)
         var_name = arg["cell"] if "cell" in arg else arg["free"]
         self.store_from_symbolic_stack(resolved_frame, var_name)
@@ -265,32 +305,45 @@ class DataTracingReceiver(EventReceiver):
         else:
           collection, index = self.pre_op_stack.pop()
 
-          index_reified = index.concrete
-          if collection.is_cow_pointer and collection.cow_latest_value and collection.cow_latest_value.collection_elems:
-            loaded_symbolic = collection.cow_latest_value.collection_elems[index_reified]
-            self.symbolic_stack.append(StackElement(
-              loaded_symbolic.concrete,
-              opcode,
-              [collection.cow_latest_value, index_reified],
-            ))
+          index_reified = index.heap_elem.object_id
+          #if collection.is_cow_pointer and collection.cow_latest_value and collection.cow_latest_value.collection_elems:
+          if collection.heap_elem.collection_heap_elems:
+            #TODO: Handle case if there may be side effects caused by custom __index__ for custom objects
+            # TODO:Handle the splice case for list. splice intoduces a new array symbolically
+            loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
+            assert isinstance(loaded_heap_element_at_index, HeapElement)
+            stackElem = StackElement(loaded_heap_element_at_index)
+            self.symbolic_stack.append(stackElem)
           else:
-            raise Exception(f"Cannot store into non-cow collection: {self.stringify_maybe_object_id(collection.concrete)}")
+            raise Exception("expected collection")
+            #Exception(f"Cannot store into non-cow collection: {self.stringify_maybe_object_id(collection.concrete)}")
       elif opname[opcode] == "STORE_SUBSCR":
         index = self.symbolic_stack.pop()
         collection = self.symbolic_stack.pop()
         value = self.symbolic_stack.pop()
 
-        index_reified = index.concrete # TODO(shadaj): handle non-integer indices
-        if collection.is_cow_pointer and collection.cow_latest_value:
-          orig_collection = collection.cow_latest_value
-          new_collection = orig_collection.collection_updated(index_reified, value)
-          collection.cow_latest_value = new_collection
-        else:
-          raise Exception("Cannot store into non-cow collection")
+        index_reified = index.heap_elem.object_id # TODO(shadaj): handle non-integer indices
+        loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
+        assert isinstance(loaded_heap_element_at_index, HeapElement)
+        #TODO: Store the Symbolic element in ollection?
+        symbElem = SymbolicElement(collection.heap_elem.object_id.__str__(), loaded_heap_element_at_index)
+        collection.heap_elem.collection_heap_elems[index_reified] = value.heap_elem
+        add_dependency(symbElem, value)
+        # if collection.is_cow_pointer and collection.cow_latest_value:
+        # orig_collection = collection.cow_latest_value
+        # new_collection = orig_collection.collection_updated(index_reified, value)
+        # collection.cow_latest_value = new_collection
+        #######
+        #AAYAN: IF LIST + SLICE, NEW STACKELEMENTS MAY BE INTRODUCED
+        # ELSE: JUST ADD DEPENDENCY FROM LOADED SYMBOLIC LHS TO SYMBOLIC RHS
+        #######
+        # else:
+        #   raise Exception("Cannot store into non-cow collection")
       elif opname[opcode] == "LOAD_CLOSURE":
+        assert False, "Not examined yet"
         if not object_id_stack[0].id in self.cell_to_frame:
           self.cell_to_frame[object_id_stack[0].id] = self.frame_tracking.get_object_id(cur_frame)
-        
+        assert False, "Change append call to symbolicstack"
         self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
       elif opname[opcode] == "SETUP_LOOP":
         pass
@@ -299,14 +352,18 @@ class DataTracingReceiver(EventReceiver):
           tos = self.symbolic_stack.pop()
           tos1 = self.symbolic_stack.pop()
           self.pre_op_stack.append((tos1, tos))
+          ########
+          # ONLY  IF the __op__ method is not defined on 1st argument
+          ########
         else:
           cur_inputs = self.pre_op_stack.pop()
 
-          self.symbolic_stack.append(StackElement(
-            object_id_stack[0],
-            opcode,
-            [cur_inputs[0], cur_inputs[1]]
-          ))
+          ########
+          # How to do this
+          ########
+          stackEl = StackElement(object_id_stack[0])
+          self.symbolic_stack.append(stackEl)
+          add_dependency2(stackEl, cur_inputs[0], cur_inputs[1])
       else:
         raise NotImplementedError(opname[opcode])
       
@@ -316,19 +373,22 @@ class DataTracingReceiver(EventReceiver):
     self.already_in_receiver = False
 
   def check_symbolic_stack(self, object_id_stack: List[Any], opcode: int) -> None:
+    print(opname[opcode])
+    print("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
+    print("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
     for i, e in enumerate(object_id_stack):
       index_from_end = i - len(object_id_stack)
       try:
-        if not self.symbolic_stack[index_from_end].concrete == e:
+        if not self.symbolic_stack[index_from_end].heap_elem.object_id == e.object_id:
           print(opname[opcode])
-          print("symbolic:", [self.stringify_maybe_object_id(e.concrete) for e in self.symbolic_stack])
-          print("concrete:", [self.stringify_maybe_object_id(e) for e in object_id_stack])
+          print("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
+          print("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
           raise Exception(
             "Stack element " + str(i) + " is symbolically " + \
-              self.stringify_maybe_object_id(self.symbolic_stack[index_from_end].concrete) + \
-                " but concretely " + self.stringify_maybe_object_id(e))
+              self.stringify_maybe_object_id(self.symbolic_stack[index_from_end].heap_elem.object_id) + \
+                " but concretely " + self.stringify_maybe_object_id(e.object_id))
       except IndexError:
         print(opname[opcode])
-        print("symbolic:", [self.stringify_maybe_object_id(e.concrete) for e in self.symbolic_stack])
-        print("concrete:", [self.stringify_maybe_object_id(e) for e in object_id_stack])
+        print("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
+        print("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
         raise Exception("Stack element at index " + str(i) + " is not in symbolic stack")

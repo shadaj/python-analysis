@@ -14,6 +14,12 @@ class ObjectId(object):
       return self.id == other.id
     return False
 
+  def __hash__(self) -> int:
+    return self.id.__hash__()
+
+  def __str__(self) -> str:
+      return "ObjID:" + self.id.__str__()
+
 def get_instrumented_program_frame() -> FrameType:
   is_next_frame = False
   for frame_container in inspect.getouterframes(inspect.currentframe()):
