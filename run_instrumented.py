@@ -1,16 +1,56 @@
 from textwrap import dedent
+from dis import opname
 
 from instrumentation.stack_tracking_receiver import StackTrackingReceiver
+from instrumentation.data_tracing_receiver import DataTracingReceiver
 from instrumentation.module_loader import PatchingPathFinder
 from instrumentation.exec import exec_instrumented
 
 patcher = PatchingPathFinder()
 patcher.install()
 
-import numpy as np
-arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+from demos.quicksort import quicksort_return
+import random
+arr = [random.randint(0, 10) for i in range(10)]
+orig_arr = list(arr)
+receiver = DataTracingReceiver()
 with StackTrackingReceiver():
-  np.linalg.eigvals(arr)
+  with receiver:
+    quicksort_return(arr)
+
+def pretty_symbolic(symbolic):
+  if symbolic.is_cow_pointer:
+    return pretty_symbolic(symbolic.cow_latest_value)
+  elif symbolic.collection_elems:
+    return "[" + ", ".join(pretty_symbolic(elem) for elem in symbolic.collection_elems) + "]"
+  else:
+    return receiver.stringify_maybe_object_id(symbolic.concrete)
+
+def print_deps(symbolic, indent_level=0):
+  indent = '  ' * indent_level
+  if symbolic.is_cow_pointer:
+    print_deps(symbolic.cow_latest_value, indent_level)
+  elif symbolic.collection_elems:
+    print(f"{indent}collection with elements:")
+    for elem in symbolic.collection_elems:
+      print_deps(elem, indent_level + 1)
+  elif opname[symbolic.opcode] == "BINARY_SUBSCR":
+    print(f"{indent}{pretty_symbolic(symbolic)} depends on index {symbolic.deps[1]} of collection {pretty_symbolic(symbolic.deps[0])}")
+    print_deps(symbolic.deps[0].collection_elems[symbolic.deps[1]], indent_level + 1)
+  else:
+    print(f"{indent}{pretty_symbolic(symbolic)} depends via {opname[symbolic.opcode]}")
+    for dep in symbolic.deps:
+      print_deps(dep, indent_level + 1)
+
+print("orig: " + str(orig_arr))
+print("out: " + str(arr))
+
+print_deps(receiver.symbolic_stack.pop())
+
+# import numpy as np
+# arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+# with StackTrackingReceiver():
+#   np.linalg.eigvals(arr)
 
 # source = dedent(
   # """

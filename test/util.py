@@ -38,7 +38,11 @@ def diff_bytecodes(b1, b2):
       b2_lines_index += 1
       cur_orig_index += 1
     else:
-      diff_lines.append("+" + b2_str[b2_lines_index])
+      diff_lines.append("+" + re.sub(
+        "0x[a-zA-Z0-9]+",
+        "SOME ADDRESS",
+        b2_str[b2_lines_index]
+      ))
       b2_lines_index += 1
 
   return ("\n".join(diff_lines), old_to_new)

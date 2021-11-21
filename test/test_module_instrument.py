@@ -1,8 +1,9 @@
 import re
 import sys
-from types import ModuleType
+from types import ModuleType, CodeType
 
 from dis import opname
+from bytecode import Compare
 
 from instrumentation.module_loader import PatchingPathFinder
 from instrumentation.event_receiver import EventReceiver
@@ -16,7 +17,11 @@ def cleanup_elem(e):
     return re.sub(
       "0x[a-zA-Z0-9]+",
       "SOME ADDRESS",
-      str(e)
+      re.sub(
+        "file \"(.|[-/])*\"",
+        "file \"some-file\"",
+        str(e)
+      )
     )
 
 class LoggingReceiver(EventReceiver):
@@ -35,10 +40,11 @@ class LoggingReceiver(EventReceiver):
       self.log.append({ "arrive_at": arg["label"] })
     else:
       self.log.append({
-        "stack": list(map(cleanup_elem, stack)),
+        "arg": { "cmp": str(arg) } if (isinstance(arg, Compare)) else 
+               cleanup_elem(str(arg)) if isinstance(arg, CodeType) else arg,
+        "is_post": is_post,
         "opcode": opcode if isinstance(opcode, str) else opname[opcode],
-        "arg": arg,
-        "is_post": is_post
+        "stack": list(map(cleanup_elem, stack)),
       })
     self.is_in_receiver = False
 

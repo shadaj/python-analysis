@@ -9,6 +9,48 @@ from typing_extensions import Literal
 
 # Mappings from op to the size of the stack to report
 
+binary_ops = [
+  "BINARY_POWER",
+  "BINARY_MULTIPLY",
+  "BINARY_MATRIX_MULTIPLY",
+  "BINARY_FLOOR_DIVIDE",
+  "BINARY_TRUE_DIVIDE",
+  "BINARY_MODULO",
+  "BINARY_ADD",
+  "BINARY_SUBTRACT",
+  "BINARY_SUBSCR",
+  "BINARY_LSHIFT",
+  "BINARY_RSHIFT",
+  "BINARY_AND",
+  "BINARY_XOR",
+  "BINARY_OR",
+
+  "COMPARE_OP",
+
+  "INPLACE_POWER",
+  "INPLACE_MULTIPLY",
+  "INPLACE_MATRIX_MULTIPLY",
+  "INPLACE_FLOOR_DIVIDE",
+  "INPLACE_TRUE_DIVIDE",
+  "INPLACE_MODULO",
+  "INPLACE_ADD",
+  "INPLACE_SUBTRACT",
+  "INPLACE_LSHIFT",
+  "INPLACE_RSHIFT",
+  "INPLACE_AND",
+  "INPLACE_XOR",
+  "INPLACE_OR",
+
+  "MAKE_FUNCTION" # TODO(shadaj): can take more than two args based on flags
+]
+
+unary_ops = [
+  "UNARY_POSITIVE",
+  "UNARY_NEGATIVE",
+  "UNARY_NOT",
+  "UNARY_INVERT"
+]
+
 # Opcodes to instrument before they run
 pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "SETUP_LOOP": 0,
@@ -17,9 +59,13 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "STORE_DEREF": 1,
   "STORE_ATTR": 2,
   "STORE_SUBSCR": 3,
-  "BINARY_SUBSCR": 2,
   "LOAD_ATTR": 1,
-  "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1 # capture all args as well as the function
+  "POP_TOP": 1,
+  "POP_JUMP_IF_TRUE": 1,
+  "POP_JUMP_IF_FALSE": 1,
+  "ROT_TWO": 2,
+  "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1, # capture all args as well as the function
+  "RETURN_VALUE": 1
 }
 
 # Opcodes to instrument after they run
@@ -29,9 +75,14 @@ post_opcode_instrument = {
   "LOAD_DEREF": 1,
   "LOAD_CLOSURE": 1,
   "LOAD_ATTR": 1,
-  "BINARY_SUBSCR": 1,
-  "CALL_FUNCTION": 1 # capture the return value
+  "LOAD_CONST": 1,
+  "LOAD_GLOBAL": 1,
+  "CALL_FUNCTION": 1, # capture the return value
 }
+
+for op in binary_ops:
+  pre_opcode_instrument[op] = 2
+  post_opcode_instrument[op] = 1
 
 def emit_instrument(
   instrumented: Bytecode,
@@ -200,6 +251,9 @@ def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
         run_or_return_value(pre_opcode_instrument[op.name], op),
         label_to_op_index, code_id, False
       )
+    
+    if isinstance(op, Instr) and op.name not in pre_opcode_instrument and op.name not in post_opcode_instrument:
+      print(f"IGNORING OPERATION {op.name}")
 
     instrumented.append(op)
 

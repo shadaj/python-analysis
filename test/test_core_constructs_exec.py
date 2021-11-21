@@ -2,17 +2,23 @@ from instrumentation.instrument_nested import extract_all_codeobjects, instrumen
 from .util import diff_bytecodes
 
 from dis import opname
+from bytecode import Compare
 from textwrap import dedent
 
 import re
 import sys
+from types import CodeType
 
 def clean_stack_addresses(elem):
   if type(elem).__name__ == "cell" or type(elem).__name__ == "function": # CellType only in Python 3.8
     return re.sub(
       "0x[a-zA-Z0-9]+",
       "SOME ADDRESS",
-      str(elem)
+      re.sub(
+        "file \"(.|[-/])*\"",
+        "file \"some-file\"",
+        str(elem)
+      )
     )
   else:
     return elem
@@ -45,7 +51,9 @@ def source_test(snapshot, source):
       events.append({
         "stack": list(map(clean_stack_addresses, stack)),
         "opcode": opcode if isinstance(opcode, str) else opname[opcode],
-        "arg": { "label": code_id_to_mapping[code_id][arg["label"]] * 2 } if (isinstance(arg, dict) and "label" in arg) else arg,
+        "arg":
+          { "label": code_id_to_mapping[code_id][arg["label"]] * 2 } if (isinstance(arg, dict) and "label" in arg) else
+          { "cmp": str(arg) } if (isinstance(arg, Compare)) else arg,
         "orig_op": code_id_to_mapping[code_id][opindex] * 2,
         "code": id_to_bytecode[code_id].name,
         "is_post": is_post
