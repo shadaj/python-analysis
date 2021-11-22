@@ -33,12 +33,12 @@ class StackElement(object):
   
   def collection_updated(self, i: Any, value: "StackElement") -> "StackElement":
     if isinstance(self.collection_elems, list):
-      # elems_copy = [StackElement(
-      #   e.concrete,
-      #   opmap["BINARY_SUBSCR"],
-      #   [self, i],
-      # ) for i, e in enumerate(self.collection_elems)]
-      elems_copy_list = [e for i, e in enumerate(self.collection_elems)]
+      elems_copy_list = [StackElement(
+        e.concrete,
+        opmap["BINARY_SUBSCR"],
+        [self, i],
+      ) for i, e in enumerate(self.collection_elems)]
+      # elems_copy_list = [e for i, e in enumerate(self.collection_elems)]
       elems_copy_list[i] = value
       return StackElement(self.concrete, self.opcode, self.deps, self.is_cow_pointer, self.cow_latest_value, elems_copy_list)
     elif isinstance(self.collection_elems, dict):

@@ -252,8 +252,8 @@ def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
         label_to_op_index, code_id, False
       )
     
-    if isinstance(op, Instr) and op.name not in pre_opcode_instrument and op.name not in post_opcode_instrument:
-      print(f"IGNORING OPERATION {op.name}")
+    # if isinstance(op, Instr) and op.name not in pre_opcode_instrument and op.name not in post_opcode_instrument:
+    #   print(f"IGNORING OPERATION {op.name}")
 
     instrumented.append(op)
 
