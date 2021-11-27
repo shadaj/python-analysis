@@ -1,4 +1,3 @@
-from __future__ import annotations
 
 from dis import opname, opmap
 from sys import version
@@ -14,75 +13,9 @@ from .util import ObjectId, get_instrumented_program_frame
 from typing import Any, Dict, List, Tuple, Union, Optional
 from typing_extensions import Literal
 
-def add_dependency(child: Union[SymbolicElement, StackElement], parent: Union[SymbolicElement, StackElement]) -> None:
-  print("New dependency: ")
-  print("Child: ", str(child))
-  print("Parent: ", str(parent))
-  child.heap_elem = parent.heap_elem
-  child.version = 1 + max(child.version, parent.version)
+from .data_tracing_variables import *
 
-def add_dependency2(child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement]) -> None:
-  print("New dependency: ")
-  print("Child: ", str(child))
-  print("Parent1: ", str(parent1))
-  print("Parent2: ", str(parent2))
-  child.version = 1 + max(child.version, parent1.version, parent2.version)
-
-object_id_to_heap_element_map: Dict[Union[ObjectId, int, str], HeapElement] = {}
-def getHeapElement(concrete: Any, heap_object_tracker: HeapObjectTracker) -> HeapElement:
-  if heap_object_tracker.is_heap_object(concrete):
-    key = ObjectId(heap_object_tracker.get_object_id(concrete))
-  else:
-    key = concrete
-  if key not in object_id_to_heap_element_map:
-    object_id_to_heap_element_map[key] = HeapElement(concrete, heap_object_tracker)
-  return object_id_to_heap_element_map[key]
-  
-
-class HeapElement(object):
-  object_id: Union[ObjectId, int, str]
-  collection_heap_elems: Optional[Union[List["HeapElement"], Dict["HeapElement", "HeapElement"]]] 
-
-  def __init__(self, concrete: Any, heap_object_tracker: HeapObjectTracker) -> None:
-    assert not isinstance(concrete, HeapElement), "Did not expect a HeapElement here"
-    if heap_object_tracker.is_heap_object(concrete):
-      self.object_id = ObjectId(heap_object_tracker.get_object_id(concrete))
-      if isinstance(concrete, list):
-        self.collection_heap_elems = [getHeapElement(e, heap_object_tracker) for e in concrete]
-      elif isinstance(concrete, dict):
-        raise Exception("Not handled HeapElements for dicts")
-    else:
-      assert isinstance(concrete, (int, str)), "Unhandled data type"
-      self.object_id = concrete #int or str
-
-class SymbolicElement(object):
-  var_name: str
-  heap_elem: HeapElement
-  version: int
-
-  def __init__(self, var_name: str, elems: Union[HeapElement, StackElement], version = 0) -> None:
-    if isinstance(elems, HeapElement):
-      self.var_name = var_name
-      self.heap_elem = elems
-      self.version = version #Starting version of any symbolic element is zero
-    elif isinstance(elems, StackElement):
-      self.var_name = var_name
-      self.heap_elem = elems.heap_elem 
-      self.version = elems.version 
-    else:
-      raise Exception("Unexpected type")
-
-class StackElement(object):
-  heap_elem: HeapElement
-  version: int
-
-  def __init__(self, elems: Union[HeapElement, SymbolicElement], version = 0) -> None:
-    if isinstance(elems, HeapElement):
-      self.heap_elem = elems
-      self.version = version #Starting version of any symbolic element is zero
-    elif isinstance(elems, SymbolicElement):
-      self.heap_elem = elems.heap_elem
-      self.version = elems.version
+from .memory_graph_generator import *
 
 class FunctionCallHandled(object):
   return_on_stack: bool
@@ -116,6 +49,10 @@ class DataTracingReceiver(EventReceiver):
     self.pre_op_stack = []
     self.frame_stack = []
     super().__init__()
+
+  def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+    super().__exit__(exc_type, exc_val, exc_tb)
+    generate_memory_graph()
 
   def stringify_maybe_object_id(self, maybe_id: Union[int, ObjectId]) -> str:
     if isinstance(maybe_id, ObjectId):
@@ -156,18 +93,22 @@ class DataTracingReceiver(EventReceiver):
     if len(self.frame_stack) == 0 or not self.frame_stack[-1] == cur_frame:
       # first time entering this instrumented frame
       self.frame_stack.append(cur_frame)
+      assert cur_frame not in self.frame_variables, "Cannot reenter a previously exited context"
       self.frame_variables[cur_frame] = {}
+
+      # frameId used for visualization only
+      frameId = self.frame_tracking.get_object_id(cur_frame)
 
       if len(self.frame_stack) == 1 or not self.frame_stack[-2] == cur_frame.f_back:
         # this frame was called from a non-instrumented frame, or is the top-level frame,
         # so we have to populate locals without symbolic traces
         for local, value in cur_frame.f_locals.items():
           valueHeap = getHeapElement(value, self.heap_object_tracking)
-          self.frame_variables[cur_frame][local] = SymbolicElement(local, valueHeap)
+          self.frame_variables[cur_frame][local] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,local), valueHeap)
       else:
         for name, value in self.pre_op_stack[-1].arg_mapping.items():
           assert isinstance(value, StackElement), "Expected StackElement Instance"
-          self.frame_variables[cur_frame][name] = SymbolicElement(name, value.heap_elem)
+          self.frame_variables[cur_frame][name] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,name), value)
           #self.frame_variables[cur_frame][name] = StackElementVersion(StackElementFactory.getStackElement(value.fetch().concrete, opcode))
           add_dependency(self.frame_variables[cur_frame][name], value)
           #add_dependency_not_on_stack(self.frame_variables[cur_frame][name], value)
@@ -177,7 +118,10 @@ class DataTracingReceiver(EventReceiver):
           if local not in self.frame_variables[cur_frame]:
             # TODO(shadaj): handle mutable default arguments
             valueHeap = getHeapElement(value, self.heap_object_tracking)
-            self.frame_variables[cur_frame][local] = SymbolicElement(local, valueHeap)
+            self.frame_variables[cur_frame][local] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,local), valueHeap)
+
+    # frameId used for visualization only
+    frameId = self.frame_tracking.get_object_id(cur_frame)
 
     if opcode == "JUMP_TARGET":
       pass
@@ -260,7 +204,7 @@ class DataTracingReceiver(EventReceiver):
         # TODO(shadaj): implement correctly
         assert is_post
         if arg not in self.global_variables:
-          self.global_variables[arg] = SymbolicElement("\'g", object_id_stack[0])
+          self.global_variables[arg] = SymbolicElement("\'%s"%(arg), object_id_stack[0])
         assert isinstance(self.global_variables[arg], SymbolicElement), "Type mismatch"
         stackVal = StackElement(self.global_variables[arg])
         self.symbolic_stack.append(stackVal)
@@ -281,11 +225,11 @@ class DataTracingReceiver(EventReceiver):
         assert not is_post
         stackVal = self.symbolic_stack.pop()
         if arg not in self.frame_variables[cur_frame]:
-          self.frame_variables[cur_frame][arg] = SymbolicElement(arg, stackVal.heap_elem)
+          self.frame_variables[cur_frame][arg] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,arg), stackVal)
         symbVal = self.frame_variables[cur_frame][arg]
         assert isinstance(symbVal, SymbolicElement), "Type mismatch"
         assert isinstance(stackVal, StackElement), "Type mismatch"
-        symbVal.heap_elem = stackVal.heap_elem
+        # symbVal.heap_elem = stackVal.heap_elem ALREADY HANDLED INSIDE ADD_DEPENDENCY
         add_dependency(symbVal, stackVal)
       elif opname[opcode] == "LOAD_DEREF":
         assert False, "Havent checked"
@@ -310,10 +254,12 @@ class DataTracingReceiver(EventReceiver):
           if collection.heap_elem.collection_heap_elems:
             #TODO: Handle case if there may be side effects caused by custom __index__ for custom objects
             # TODO:Handle the splice case for list. splice intoduces a new array symbolically
-            loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
-            assert isinstance(loaded_heap_element_at_index, HeapElement)
-            stackElem = StackElement(loaded_heap_element_at_index)
+            nameless_symbolic_element = collection.heap_elem.collection_heap_elems[index_reified]
+            #loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
+            assert isinstance(nameless_symbolic_element, SymbolicElement)
+            stackElem = StackElement(nameless_symbolic_element)
             self.symbolic_stack.append(stackElem)
+            add_dependency(stackElem, nameless_symbolic_element)
           else:
             raise Exception("expected collection")
             #Exception(f"Cannot store into non-cow collection: {self.stringify_maybe_object_id(collection.concrete)}")
@@ -323,12 +269,17 @@ class DataTracingReceiver(EventReceiver):
         value = self.symbolic_stack.pop()
 
         index_reified = index.heap_elem.object_id # TODO(shadaj): handle non-integer indices
-        loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
-        assert isinstance(loaded_heap_element_at_index, HeapElement)
+        nameless_symbolic_element = collection.heap_elem.collection_heap_elems[index_reified]
+        #loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
+        assert isinstance(nameless_symbolic_element, SymbolicElement)
         #TODO: Store the Symbolic element in ollection?
-        symbElem = SymbolicElement(collection.heap_elem.object_id.__str__(), loaded_heap_element_at_index)
-        collection.heap_elem.collection_heap_elems[index_reified] = value.heap_elem
-        add_dependency(symbElem, value)
+        #symbElem = SymbolicElement(collection.heap_elem.object_id.__str__(), loaded_heap_element_at_index)
+        # collection.heap_elem.collection_heap_elems[index_reified] = value.heap_elem
+        
+        
+        #nameless_symbolic_element.heap_elem = value.heap_elem ALREADY HANDLED INSIDE ADD_DEPENDENCY
+        
+        add_dependency(nameless_symbolic_element, value)
         # if collection.is_cow_pointer and collection.cow_latest_value:
         # orig_collection = collection.cow_latest_value
         # new_collection = orig_collection.collection_updated(index_reified, value)

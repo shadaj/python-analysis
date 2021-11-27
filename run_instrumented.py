@@ -11,7 +11,8 @@ patcher.install()
 
 from demos.quicksort import quicksort_return
 import random
-arr = [random.randint(0, 10) for i in range(5)]
+random.seed(100)
+arr = [random.randint(0, 10) for i in range(15)]
 orig_arr = list(arr)
 receiver = DataTracingReceiver()
 # with StackTrackingReceiver():
@@ -25,6 +26,9 @@ def pretty_symbolic(symbolic):
     return "[" + ", ".join(pretty_symbolic(elem) for elem in symbolic.collection_elems) + "]"
   else:
     return receiver.stringify_maybe_object_id(symbolic.concrete)
+
+# orig: [2, 7, 7, 2, 6, 5, 6, 8, 1, 8, 1, 1, 7, 4, 0]
+# out: [0, 1, 1, 1, 2, 2, 4, 5, 6, 6, 7, 7, 7, 8, 8]
 
 # def print_deps(symbolic, indent_level=0):
 #   indent = '  ' * indent_level
