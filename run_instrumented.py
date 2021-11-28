@@ -12,7 +12,7 @@ patcher.install()
 from demos.quicksort import quicksort_return
 import random
 random.seed(100)
-arr = [random.randint(0, 10) for i in range(15)]
+arr = [random.randint(0, 10) for i in range(25)]
 orig_arr = list(arr)
 receiver = DataTracingReceiver()
 # with StackTrackingReceiver():

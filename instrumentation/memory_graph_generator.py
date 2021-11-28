@@ -36,6 +36,7 @@ def add_dependency2(child: Union[SymbolicElement, StackElement], parent1: Union[
   add_dependency_internal([(child, parent1), (child, parent2)])
 
 allObservedPositions = set()
+variableToLatestVersion = {}
 
 def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]]) -> None:
   global allObservedPositions
@@ -47,7 +48,14 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
   child.version = newChildVersion
   childStr = child.var_name + "#" + str(child.version)
 
+  oldChildVersion = variableToLatestVersion.get(child.var_name, None)
+  variableToLatestVersion[child.var_name] = child.version
+
   G.add_node(childStr, pos=(child.var_name, child.version))
+
+  if oldChildVersion is not None:
+    oldChildStr = child.var_name + "#" + str(oldChildVersion)
+    G.add_edge(oldChildStr, childStr, sameVariableEdge = True)
 
   allObservedPositions.add(child.var_name)
 
@@ -56,7 +64,9 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
     parentStr = parent.var_name + "#" + str(parent.version)
 
     G.add_node(parentStr, pos=(parent.var_name, parent.version))
-    G.add_edge(parentStr, childStr)
+    G.add_edge(parentStr, childStr, sameVariableEdge = False)
+
+    variableToLatestVersion[parent.var_name] = parent.version
 
     allObservedPositions.add(parent.var_name)
 
@@ -72,11 +82,14 @@ def generate_memory_graph():
 
   toRemove = []
   allNodes = [h for h in G.nodes]
+
+  # Pruning extra nodes. Any node which does not have "nameless" in it's name, i.e. is not a compound data structure (non primitive like int/str) 
+  # is treated as a node to exclude. This is a temporary logic and can be changed in the future. #TODO Robust logic 
   for node in allNodes:
     if node not in G.nodes:
       # Element has already been deleted so we do not need to consider it anymore
       continue
-    if "st_el" in node:
+    if "nameless" not in node:
       childs = [c for c in G.successors(node)]
       parents = [p for p in G.predecessors(node)]
       toRemove.append(node)
@@ -86,7 +99,7 @@ def generate_memory_graph():
         G.remove_edge(node, child)
       for child in childs:
         for parent in parents:
-          G.add_edge(parent, child)
+          G.add_edge(parent, child, sameVariableEdge = False)
   
   for node in toRemove:
     G.remove_node(node)
@@ -99,6 +112,15 @@ def generate_memory_graph():
   pos = {}
   for key, value in pos_raw.items():
     pos[key] = getXY(value)
+
+  for key, value in sorted(pos.items(), key=lambda item:item[1][1]):
+    parentsYCoords = [pos[p][1] for p in G.predecessors(key)]
+    if len(parentsYCoords) > 0:
+      newYCoord = 1 + max(parentsYCoords)
+    else:
+      newYCoord = 0
+    pos[key] = (pos[key][0], newYCoord)
+
   print(pos_raw)
   print(pos)
   nx.draw_networkx_nodes(G, pos)
@@ -108,7 +130,7 @@ def generate_memory_graph():
   for e in G.edges:
     print(e)
   for e in G.edges:
-    if True: #nx.get_edge_attributes(G,'isShadow')[e] == False:
+    if nx.get_edge_attributes(G,'sameVariableEdge')[e] == False:
       ax.annotate("",
           xy=pos[e[1]], xycoords='data',
           xytext=pos[e[0]], textcoords='data',
