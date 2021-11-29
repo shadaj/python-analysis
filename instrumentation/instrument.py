@@ -4,7 +4,7 @@ from bytecode import Bytecode, CellVar, FreeVar, Instr, Label, UNSET
 
 from .util import clone_bytecode_empty_body
 
-from typing import Any, Callable, Dict, Optional, Union, cast
+from typing import Any, Callable, Dict, Optional, Union, cast, Tuple
 from typing_extensions import Literal
 
 # Mappings from op to the size of the stack to report
@@ -65,6 +65,8 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "POP_JUMP_IF_FALSE": 1,
   "ROT_TWO": 2,
   "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1, # capture all args as well as the function
+  "CALL_METHOD": lambda op: cast(int, op.arg) + 2, # capture all args as well as the function as well as self
+  "UNPACK_SEQUENCE": 1,
   "RETURN_VALUE": 1
 }
 
@@ -78,11 +80,22 @@ post_opcode_instrument = {
   "LOAD_CONST": 1,
   "LOAD_GLOBAL": 1,
   "CALL_FUNCTION": 1, # capture the return value
+  "CALL_METHOD": 1, # capture the return value
+  "BUILD_LIST": 1,
+  "BUILD_SLICE": 1,
+  "LOAD_METHOD": 2, # capture method and self parameter
+}
+
+pre_and_post_opcode_instrument: Dict[str, Tuple[Union[int, Callable[[Instr], int]], Union[int, Callable[[Instr], int]]]] = {
+
 }
 
 for op in binary_ops:
   pre_opcode_instrument[op] = 2
   post_opcode_instrument[op] = 1
+
+for op in pre_and_post_opcode_instrument:
+  pre_opcode_instrument[op], post_opcode_instrument[op] = pre_and_post_opcode_instrument[op]
 
 def emit_instrument(
   instrumented: Bytecode,

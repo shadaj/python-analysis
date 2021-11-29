@@ -89,7 +89,7 @@ def generate_memory_graph():
     if node not in G.nodes:
       # Element has already been deleted so we do not need to consider it anymore
       continue
-    if "nameless" not in node:
+    if False: #"nameless" not in node:
       childs = [c for c in G.successors(node)]
       parents = [p for p in G.predecessors(node)]
       toRemove.append(node)

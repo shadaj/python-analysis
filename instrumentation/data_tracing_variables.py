@@ -23,6 +23,8 @@ namelessSymbolicElementCount = 0
 class HeapElement(object):
   object_id: Union[ObjectId, int, str]
   collection_heap_elems: Optional[Union[List[SymbolicElement], Dict[SymbolicElement, SymbolicElement]]] 
+  collection_counter: int
+  collection_prefix: str
 
   def __init__(self, concrete: Any, heap_object_tracker: HeapObjectTracker, namePrefix: str = "") -> None:
     global namelessSymbolicElementCount
@@ -31,13 +33,22 @@ class HeapElement(object):
       self.object_id = ObjectId(heap_object_tracker.get_object_id(concrete))
       if isinstance(concrete, list):
         self.collection_heap_elems = []
+        self.collection_counter = 0
         for i, e in enumerate(concrete):
             if namePrefix == "": #Top level variable, need a global count for them
                 namelessSymbolicElementCount += 1
                 nameStr = "\'\'nameless%05d"%namelessSymbolicElementCount
+                self.collection_counter = namelessSymbolicElementCount
             else:
                 nameStr = namePrefix + "\'\'nameless%05d"%i
+                self.collection_counter = i
+            self.collection_prefix = namePrefix + "\'\'nameless%05d"
             self.collection_heap_elems.append(SymbolicElement(nameStr, getHeapElement(e, heap_object_tracker, nameStr + "|")))
+      elif isinstance(concrete, slice):
+        self.collection_heap_elems = []
+        self.collection_heap_elems.append(SymbolicElement("slice%05d_start", getHeapElement(concrete.start, heap_object_tracker, "slice%05d_start|")))
+        self.collection_heap_elems.append(SymbolicElement("slice%05d_stop", getHeapElement(concrete.stop, heap_object_tracker, "slice%05d_stop|")))
+        self.collection_heap_elems.append(SymbolicElement("slice%05d_step", getHeapElement(concrete.step, heap_object_tracker, "slice%05d_step|")))
       elif isinstance(concrete, dict):
         raise Exception("Not handled HeapElements for dicts")
     else:
@@ -78,3 +89,5 @@ class StackElement(object):
     elif isinstance(elems, SymbolicElement):
       self.heap_elem = elems.heap_elem
       self.version = elems.version + 1
+    else:
+        raise Exception("Unexpected type")

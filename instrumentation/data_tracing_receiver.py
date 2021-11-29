@@ -125,7 +125,7 @@ class DataTracingReceiver(EventReceiver):
 
     if opcode == "JUMP_TARGET":
       pass
-    elif opname[opcode] == "CALL_FUNCTION":
+    elif opname[opcode] == "CALL_FUNCTION" or opname[opcode] == "CALL_METHOD":
       if not is_post:
         symbolic_stack_args = self.symbolic_stack[len(self.symbolic_stack) - len(stack) + 1:]
         self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - len(stack)]
@@ -145,7 +145,20 @@ class DataTracingReceiver(EventReceiver):
 
         self.function_call_stack.append(function_args_id_stack[0])
         self.pre_op_stack.append(FunctionCallHandled(args_mapping))
+
+        # TODO: Uninstrumentable function dependencies where None is returned:
+        if function_object == list.append:
+          assert len(symbolic_stack_args) == 2, "Unexpected number of function call parameters" #self and object to append
+          mainList = symbolic_stack_args[0]
+          toAppend = symbolic_stack_args[1]
+          currentCount = mainList.heap_elem.collection_counter
+          currentPrefix = mainList.heap_elem.collection_prefix
+          toAppendSymbolic = SymbolicElement(currentPrefix%(currentCount+1), toAppend)
+          mainList.heap_elem.collection_heap_elems.append(toAppendSymbolic)
+          add_dependency(toAppendSymbolic, toAppend)
       else:
+        function_args_id_stack = self.convert_stack_to_heap_id(stack)
+        function_object = self.heap_object_tracking.get_by_id(function_args_id_stack[0].object_id.id)
         assert len(stack) == 1, "Expect one return value for any function"
         called_function = self.function_call_stack.pop()
         pre_op_stack_last_element = self.pre_op_stack.pop()
@@ -154,12 +167,16 @@ class DataTracingReceiver(EventReceiver):
           return_value_stack_el = self.symbolic_stack[0]
           assert isinstance(return_value_stack_el, StackElement), "Expected type mismatch"
         else:
-          # TODO: Dependencies to be added depending on the function itself. Currently this is an approximation might have to be changed
-          return_value_heap = getHeapElement(stack[0],self.heap_object_tracking)
-          return_value_stack_el = StackElement(return_value_heap)
-          #StackElementVersion(StackElementFactory.getStackElement(function_ret_stack[0], opcode))
-          self.symbolic_stack.append(return_value_stack_el)
-          #self.symbolic_stack.append(return_value_symbolic)
+          # TODO: Uninstrumentable function dependencies where return value helps infer dependencies
+          if False: # Some method
+            pass
+          else: # Generic function
+            return_value_heap = getHeapElement(stack[0],self.heap_object_tracking)
+            return_value_stack_el = StackElement(return_value_heap)
+            #StackElementVersion(StackElementFactory.getStackElement(function_ret_stack[0], opcode))
+            self.symbolic_stack.append(return_value_stack_el)
+          
+
 
         # TODO: Add Dependencie?
         # if not(stack[0] is None):
@@ -209,6 +226,14 @@ class DataTracingReceiver(EventReceiver):
         stackVal = StackElement(self.global_variables[arg])
         self.symbolic_stack.append(stackVal)
         add_dependency(stackVal, self.global_variables[arg])
+      elif opname[opcode] == "LOAD_METHOD":
+        assert is_post
+        methodHeapId = object_id_stack[-2]
+        selfStackElement = self.symbolic_stack.pop()
+        assert isinstance(methodHeapId, HeapElement), "Type mismatch"
+        methodStackElement = StackElement(methodHeapId)
+        self.symbolic_stack.append(methodStackElement)
+        self.symbolic_stack.append(selfStackElement)
       elif opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
         assert is_post
         assert isinstance(self.frame_variables[cur_frame][arg], SymbolicElement), "Type mismatch"
@@ -216,6 +241,15 @@ class DataTracingReceiver(EventReceiver):
         self.symbolic_stack.append(stackVal)
         add_dependency(stackVal, self.frame_variables[cur_frame][arg])
         assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
+      elif opname[opcode] == "BUILD_LIST" or opname[opcode] == "BUILD_SLICE":
+        assert is_post
+        newListHeap = object_id_stack[0]
+        newListSymStack = StackElement(newListHeap)
+        # TODO TODO TODO: Constructor dependencies
+        # for i in range(int(arg)):
+        #   add_dependency(newListSymStack, self.symbolic_stack[- i - 1])
+        self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - int(arg)]
+        self.symbolic_stack.append(newListSymStack)  
       elif opname[opcode] == "STORE_NAME" or opname[opcode] == "STORE_FAST":
         #######
         # TODO: AAYAN: IF LIST + SLICE, NEW STACKELEMENTS MAY BE INTRODUCED
@@ -249,17 +283,28 @@ class DataTracingReceiver(EventReceiver):
         else:
           collection, index = self.pre_op_stack.pop()
 
-          index_reified = index.heap_elem.object_id
+          
           #if collection.is_cow_pointer and collection.cow_latest_value and collection.cow_latest_value.collection_elems:
           if collection.heap_elem.collection_heap_elems:
             #TODO: Handle case if there may be side effects caused by custom __index__ for custom objects
-            # TODO:Handle the splice case for list. splice intoduces a new array symbolically
-            nameless_symbolic_element = collection.heap_elem.collection_heap_elems[index_reified]
-            #loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
-            assert isinstance(nameless_symbolic_element, SymbolicElement)
-            stackElem = StackElement(nameless_symbolic_element)
-            self.symbolic_stack.append(stackElem)
-            add_dependency(stackElem, nameless_symbolic_element)
+            if not self.heap_object_tracking.is_heap_object(index.heap_elem.object_id):
+              index_reified = index.heap_elem.object_id
+              nameless_symbolic_element = collection.heap_elem.collection_heap_elems[index_reified]
+              #loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
+              assert isinstance(nameless_symbolic_element, SymbolicElement)
+              stackElem = StackElement(nameless_symbolic_element)
+              self.symbolic_stack.append(stackElem)
+              add_dependency(stackElem, nameless_symbolic_element)
+            else:
+              index_reified = self.heap_object_tracking.get_by_id(index.heap_elem.object_id.id)
+              nameless_symbolic_elements = collection.heap_elem.collection_heap_elems[index_reified]
+              sliceHeap = object_id_stack[0]
+              sliceStackEl = StackElement(sliceHeap)
+              assert len(nameless_symbolic_elements) == len(sliceStackEl.heap_elem.collection_heap_elems), "Concrete and symbolic arrays should be of the same size"
+              self.symbolic_stack.append(sliceStackEl)
+              for i in range(len(nameless_symbolic_elements)):
+                add_dependency(sliceStackEl.heap_elem.collection_heap_elems[i], nameless_symbolic_elements[i])
+            
           else:
             raise Exception("expected collection")
             #Exception(f"Cannot store into non-cow collection: {self.stringify_maybe_object_id(collection.concrete)}")
@@ -267,11 +312,20 @@ class DataTracingReceiver(EventReceiver):
         index = self.symbolic_stack.pop()
         collection = self.symbolic_stack.pop()
         value = self.symbolic_stack.pop()
-
-        index_reified = index.heap_elem.object_id # TODO(shadaj): handle non-integer indices
-        nameless_symbolic_element = collection.heap_elem.collection_heap_elems[index_reified]
-        #loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
-        assert isinstance(nameless_symbolic_element, SymbolicElement)
+        
+        # TODO:Handle the splice case for list when list size changes. splice intoduces a new array symbolically
+        if not self.heap_object_tracking.is_heap_object(index.heap_elem.object_id):
+          index_reified = index.heap_elem.object_id # TODO(shadaj): handle non-integer indices
+          nameless_symbolic_element = collection.heap_elem.collection_heap_elems[index_reified]
+          #loaded_heap_element_at_index = collection.heap_elem.collection_heap_elems[index_reified]
+          assert isinstance(nameless_symbolic_element, SymbolicElement)
+          add_dependency(nameless_symbolic_element, value)
+        else:
+          index_reified = self.heap_object_tracking.get_by_id(index.heap_elem.object_id.id)
+          nameless_symbolic_elements = collection.heap_elem.collection_heap_elems[index_reified]
+          assert len(nameless_symbolic_elements) == len(value.heap_elem.collection_heap_elems), "Concrete and symbolic arrays should be of the same size"
+          for i in range(len(nameless_symbolic_elements)):
+            add_dependency(value.heap_elem.collection_heap_elems[i], nameless_symbolic_elements[i])
         #TODO: Store the Symbolic element in ollection?
         #symbElem = SymbolicElement(collection.heap_elem.object_id.__str__(), loaded_heap_element_at_index)
         # collection.heap_elem.collection_heap_elems[index_reified] = value.heap_elem
@@ -279,7 +333,7 @@ class DataTracingReceiver(EventReceiver):
         
         #nameless_symbolic_element.heap_elem = value.heap_elem ALREADY HANDLED INSIDE ADD_DEPENDENCY
         
-        add_dependency(nameless_symbolic_element, value)
+        
         # if collection.is_cow_pointer and collection.cow_latest_value:
         # orig_collection = collection.cow_latest_value
         # new_collection = orig_collection.collection_updated(index_reified, value)
@@ -298,6 +352,13 @@ class DataTracingReceiver(EventReceiver):
         self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
       elif opname[opcode] == "SETUP_LOOP":
         pass
+      elif opname[opcode] == "UNPACK_SEQUENCE":
+        assert not is_post
+        numElements = int(arg)
+        sequenceSym = self.symbolic_stack.pop()
+        assert numElements == len(sequenceSym.heap_elem.collection_heap_elems)
+        for i in range(numElements):
+          self.symbolic_stack.append(StackElement(sequenceSym.heap_elem.collection_heap_elems[- i - 1]))
       elif opname[opcode] in binary_ops:
         if not is_post:
           tos = self.symbolic_stack.pop()
