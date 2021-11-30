@@ -1,7 +1,3 @@
-def mergesort_return(a):
-	a = merge2(a)
-	return a
-
 def merge2(a):
 	length = len(a)
 	if length <= 1:
