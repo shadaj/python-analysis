@@ -10,8 +10,9 @@ patcher = PatchingPathFinder()
 patcher.install()
 
 # from demos.quicksort import quicksort_return
-from demos.mergesort import merge2
+# from demos.mergesort import merge2
 # from demos.simple import trial
+from demos.bubblesort import bubble
 import random
 random.seed(100)
 arr = [random.randint(0, 10) for i in range(25)]
@@ -19,7 +20,7 @@ orig_arr = list(arr)
 receiver = DataTracingReceiver()
 # with StackTrackingReceiver():
 with receiver:
-  arr = merge2(arr)
+  bubble(arr)
 
 def pretty_symbolic(symbolic):
   if symbolic.is_cow_pointer:
