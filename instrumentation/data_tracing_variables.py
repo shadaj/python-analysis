@@ -18,8 +18,6 @@ def getHeapElement(concrete: Any, heap_object_tracker: HeapObjectTracker, nameSt
   return object_id_to_heap_element_map[key]
 
 
-namelessSymbolicElementCount = 0
-
 class HeapElement(object):
   object_id: Union[ObjectId, int, str]
   collection_heap_elems: Optional[Union[List[SymbolicElement], Dict[SymbolicElement, SymbolicElement]]] 
@@ -27,22 +25,19 @@ class HeapElement(object):
   collection_prefix: str
 
   def __init__(self, concrete: Any, heap_object_tracker: HeapObjectTracker, namePrefix: str = "") -> None:
-    global namelessSymbolicElementCount
     assert not isinstance(concrete, HeapElement), "Did not expect a HeapElement here"
     if heap_object_tracker.is_heap_object(concrete):
       self.object_id = ObjectId(heap_object_tracker.get_object_id(concrete))
-      if isinstance(concrete, list):
+      if isinstance(concrete, (list, tuple)):
         self.collection_heap_elems = []
-        self.collection_counter = 0
+        self.collection_counter = -1
+        if namePrefix == "": #Top level variable, need a global count for them
+            namePrefix = "hpo%05d|"%self.object_id.id 
+        self.collection_prefix = namePrefix + "\'\'nameless%05d"
         for i, e in enumerate(concrete):
-            if namePrefix == "": #Top level variable, need a global count for them
-                namelessSymbolicElementCount += 1
-                nameStr = "\'\'nameless%05d"%namelessSymbolicElementCount
-                self.collection_counter = namelessSymbolicElementCount
-            else:
-                nameStr = namePrefix + "\'\'nameless%05d"%i
-                self.collection_counter = i
-            self.collection_prefix = namePrefix + "\'\'nameless%05d"
+                   
+            nameStr = namePrefix + "\'\'nameless%05d"%i
+            self.collection_counter = i
             self.collection_heap_elems.append(SymbolicElement(nameStr, getHeapElement(e, heap_object_tracker, nameStr + "|")))
       elif isinstance(concrete, slice):
         self.collection_heap_elems = []

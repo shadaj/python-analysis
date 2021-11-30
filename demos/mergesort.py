@@ -1,8 +1,11 @@
 def mergesort_return(a):
-	return merge2(a)
+	a = merge2(a)
+	return a
 
 def merge2(a):
 	length = len(a)
+	if length <= 1:
+		return a
 	halfway = length // 2
 	aLeft = merge2(a[:halfway])
 	aRight = merge2(a[halfway:])

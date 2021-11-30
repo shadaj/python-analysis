@@ -151,14 +151,14 @@ class DataTracingReceiver(EventReceiver):
           assert len(symbolic_stack_args) == 2, "Unexpected number of function call parameters" #self and object to append
           mainList = symbolic_stack_args[0]
           toAppend = symbolic_stack_args[1]
+          mainList.heap_elem.collection_counter += 1
           currentCount = mainList.heap_elem.collection_counter
           currentPrefix = mainList.heap_elem.collection_prefix
-          toAppendSymbolic = SymbolicElement(currentPrefix%(currentCount+1), toAppend)
+          toAppendSymbolic = SymbolicElement(currentPrefix%(currentCount), toAppend)
           mainList.heap_elem.collection_heap_elems.append(toAppendSymbolic)
           add_dependency(toAppendSymbolic, toAppend)
       else:
         function_args_id_stack = self.convert_stack_to_heap_id(stack)
-        function_object = self.heap_object_tracking.get_by_id(function_args_id_stack[0].object_id.id)
         assert len(stack) == 1, "Expect one return value for any function"
         called_function = self.function_call_stack.pop()
         pre_op_stack_last_element = self.pre_op_stack.pop()
@@ -285,7 +285,7 @@ class DataTracingReceiver(EventReceiver):
 
           
           #if collection.is_cow_pointer and collection.cow_latest_value and collection.cow_latest_value.collection_elems:
-          if collection.heap_elem.collection_heap_elems:
+          if hasattr(collection.heap_elem, "collection_heap_elems"):
             #TODO: Handle case if there may be side effects caused by custom __index__ for custom objects
             if not self.heap_object_tracking.is_heap_object(index.heap_elem.object_id):
               index_reified = index.heap_elem.object_id
