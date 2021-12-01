@@ -12,23 +12,61 @@ patcher.install()
 # from demos.quicksort import quicksort_return
 # from demos.mergesort import merge2
 # from demos.simple import trial
-from demos.bubblesort import bubble
+# from demos.bubblesort import bubble
+# from demos.heapsort import heapsort
+# from demos.matmul import matmul, matmul2
+from demos.dp import coinChange
 import random
 random.seed(100)
-arr = [random.randint(0, 10) for i in range(25)]
-orig_arr = list(arr)
-receiver = DataTracingReceiver()
-# with StackTrackingReceiver():
-with receiver:
-  bubble(arr)
 
-def pretty_symbolic(symbolic):
-  if symbolic.is_cow_pointer:
-    return pretty_symbolic(symbolic.cow_latest_value)
-  elif symbolic.collection_elems:
-    return "[" + ", ".join(pretty_symbolic(elem) for elem in symbolic.collection_elems) + "]"
-  else:
-    return receiver.stringify_maybe_object_id(symbolic.concrete)
+# arr = [random.randint(0, 10) for i in range(7)]
+# with DataTracingReceiver():
+#   trial(arr)
+
+# arr = [random.randint(0, 10) for i in range(25)]
+# orig_arr = list(arr)
+# receiver = DataTracingReceiver()
+# # with StackTrackingReceiver():
+# with receiver:
+#   # quicksort_return(arr)
+#   # bubble(arr)
+#   # arr = merge2(arr)
+
+#   # heapsort(arr)
+
+# print("orig: " + str(orig_arr))
+# print("out: " + str(arr))
+
+# I = 4
+# J = 4
+# K = 4
+# a = [[random.randint(0, 10) for i in range(J)] for j in range(I)]
+# b = [[random.randint(0, 10) for i in range(K)] for j in range(J)]
+# c = [[0 for i in range(K)] for j in range(I)]
+
+# with DataTracingReceiver():
+#   matmul2(a, b, c)
+
+# print(a)
+# print(b)
+# print(c)
+
+coins = [1,2,5]
+amount = 11
+
+with DataTracingReceiver():
+  ans = coinChange(coins, amount)
+
+print(ans)
+
+
+# def pretty_symbolic(symbolic):
+#   if symbolic.is_cow_pointer:
+#     return pretty_symbolic(symbolic.cow_latest_value)
+#   elif symbolic.collection_elems:
+#     return "[" + ", ".join(pretty_symbolic(elem) for elem in symbolic.collection_elems) + "]"
+#   else:
+#     return receiver.stringify_maybe_object_id(symbolic.concrete)
 
 # orig: [2, 7, 7, 2, 6, 5, 6, 8, 1, 8, 1, 1, 7, 4, 0]
 # out: [0, 1, 1, 1, 2, 2, 4, 5, 6, 6, 7, 7, 7, 8, 8]
@@ -49,8 +87,7 @@ def pretty_symbolic(symbolic):
 #     for dep in symbolic.deps:
 #       print_deps(dep, indent_level + 1)
 
-print("orig: " + str(orig_arr))
-print("out: " + str(arr))
+
 
 # print_deps(receiver.symbolic_stack.pop())
 

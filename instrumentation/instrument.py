@@ -64,6 +64,9 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "POP_JUMP_IF_TRUE": 1,
   "POP_JUMP_IF_FALSE": 1,
   "ROT_TWO": 2,
+  "ROT_THREE": 3,
+  "DUP_TOP_TWO": 2,
+  "DUP_TOP": 1,
   "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1, # capture all args as well as the function
   "CALL_METHOD": lambda op: cast(int, op.arg) + 2, # capture all args as well as the function as well as self
   "UNPACK_SEQUENCE": 1,
@@ -83,6 +86,7 @@ post_opcode_instrument = {
   "CALL_METHOD": 1, # capture the return value
   "BUILD_LIST": 1,
   "BUILD_SLICE": 1,
+  "BUILD_TUPLE": 1,
   "LOAD_METHOD": 2, # capture method and self parameter
 }
 

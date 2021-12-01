@@ -212,6 +212,27 @@ class DataTracingReceiver(EventReceiver):
         tos1 = self.symbolic_stack.pop()
         self.symbolic_stack.append(tos)
         self.symbolic_stack.append(tos1)
+      elif opname[opcode] == "ROT_THREE":
+        tos = self.symbolic_stack.pop()
+        tos1 = self.symbolic_stack.pop()
+        tos2 = self.symbolic_stack.pop()
+        self.symbolic_stack.append(tos)
+        self.symbolic_stack.append(tos2)
+        self.symbolic_stack.append(tos1)
+      elif opname[opcode] == "DUP_TOP_TWO":
+        tos = self.symbolic_stack.pop()
+        tos2 = self.symbolic_stack.pop()
+        tos_copy = tos.duplicate()
+        tos2_copy = tos2.duplicate()
+        self.symbolic_stack.append(tos2_copy)
+        self.symbolic_stack.append(tos_copy)
+        self.symbolic_stack.append(tos2)
+        self.symbolic_stack.append(tos)
+      elif opname[opcode] == "DUP_TOP":
+        tos = self.symbolic_stack.pop()
+        tos_copy = tos.duplicate()
+        self.symbolic_stack.append(tos_copy)
+        self.symbolic_stack.append(tos)
       elif opname[opcode] == "LOAD_CONST":
         assert is_post
         assert len(stack) == 1, "Only one const loaded at a time"
@@ -241,7 +262,7 @@ class DataTracingReceiver(EventReceiver):
         self.symbolic_stack.append(stackVal)
         add_dependency(stackVal, self.frame_variables[cur_frame][arg])
         assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
-      elif opname[opcode] == "BUILD_LIST" or opname[opcode] == "BUILD_SLICE":
+      elif opname[opcode] == "BUILD_LIST" or opname[opcode] == "BUILD_SLICE" or opname[opcode] == "BUILD_TUPLE":
         assert is_post
         newListHeap = object_id_stack[0]
         newListSymStack = StackElement(newListHeap)

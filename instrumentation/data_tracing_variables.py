@@ -80,9 +80,12 @@ class StackElement(object):
     self.var_name = "st_el%d"%stackElementCount
     if isinstance(elems, HeapElement):
       self.heap_elem = elems
-      self.version = version #Starting version of any symbolic element is zero
+      self.version = version #Starting version of any stack element is the same as parent object
     elif isinstance(elems, SymbolicElement):
       self.heap_elem = elems.heap_elem
       self.version = elems.version + 1
     else:
         raise Exception("Unexpected type")
+
+  def duplicate(self) -> StackElement:
+      return StackElement(self.heap_elem, self.version)
