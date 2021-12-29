@@ -12,7 +12,7 @@ patcher.install()
 # from demos.quicksort import quicksort_return
 # from demos.mergesort import merge2
 # from demos.simple import trial
-# from demos.bubblesort import bubble
+from demos.bubblesort import bubble, bubble_for
 # from demos.heapsort import heapsort
 # from demos.matmul import matmul, matmul2
 from demos.dp import coinChange
@@ -23,16 +23,16 @@ random.seed(100)
 # with DataTracingReceiver():
 #   trial(arr)
 
-# arr = [random.randint(0, 10) for i in range(25)]
-# orig_arr = list(arr)
-# receiver = DataTracingReceiver()
-# # with StackTrackingReceiver():
-# with receiver:
-#   # quicksort_return(arr)
-#   # bubble(arr)
-#   # arr = merge2(arr)
+arr = [random.randint(0, 100) for i in range(25)]
+orig_arr = list(arr)
+receiver = DataTracingReceiver()
+# with StackTrackingReceiver():
+with receiver:
+  # quicksort_return(arr)
+  bubble(arr)
+  # arr = merge2(arr)
 
-#   # heapsort(arr)
+  # heapsort(arr)
 
 # print("orig: " + str(orig_arr))
 # print("out: " + str(arr))
@@ -51,13 +51,13 @@ random.seed(100)
 # print(b)
 # print(c)
 
-coins = [1,2,5]
-amount = 11
+# coins = [1,2,5]
+# amount = 11
 
-with DataTracingReceiver():
-  ans = coinChange(coins, amount)
+# with DataTracingReceiver():
+#   ans = coinChange(coins, amount)
 
-print(ans)
+# print(ans)
 
 
 # def pretty_symbolic(symbolic):

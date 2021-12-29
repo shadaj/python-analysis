@@ -262,6 +262,19 @@ class DataTracingReceiver(EventReceiver):
         self.symbolic_stack.append(stackVal)
         add_dependency(stackVal, self.frame_variables[cur_frame][arg])
         assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
+      elif opname[opcode] == "GET_ITER":
+        assert is_post
+        self.symbolic_stack.pop() #Popping the original collection from symbolic stack
+        # The concrete stack actually has an iter object however which gets popped automatically when iterator exhausts
+        #
+        # We do not add any symbolic stac element for the iterator as it is not accessed otherwise. GET_ITER is always followed 
+        # by FOR_ITER which would pop the iterator
+      elif opname[opcode] == "FOR_ITER":
+        assert is_post
+        iterateHeapValue = object_id_stack[-1]
+        iterateStackElement = StackElement(iterateHeapValue)
+        self.symbolic_stack.append(iterateStackElement)
+        # See GET_ITER notes
       elif opname[opcode] == "BUILD_LIST" or opname[opcode] == "BUILD_SLICE" or opname[opcode] == "BUILD_TUPLE":
         assert is_post
         newListHeap = object_id_stack[0]

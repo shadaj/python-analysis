@@ -70,7 +70,7 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1, # capture all args as well as the function
   "CALL_METHOD": lambda op: cast(int, op.arg) + 2, # capture all args as well as the function as well as self
   "UNPACK_SEQUENCE": 1,
-  "RETURN_VALUE": 1
+  "RETURN_VALUE": 1,
 }
 
 # Opcodes to instrument after they run
@@ -88,6 +88,8 @@ post_opcode_instrument = {
   "BUILD_SLICE": 1,
   "BUILD_TUPLE": 1,
   "LOAD_METHOD": 2, # capture method and self parameter
+  "GET_ITER": 0, # we dont capture concrete stack as iterator is ignored symbolically
+  "FOR_ITER": 1,
 }
 
 pre_and_post_opcode_instrument: Dict[str, Tuple[Union[int, Callable[[Instr], int]], Union[int, Callable[[Instr], int]]]] = {
