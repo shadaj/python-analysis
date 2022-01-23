@@ -1,11 +1,11 @@
 from __future__ import annotations
+from types import CellType
 
 from typing import Any, Dict, List, Tuple, Union, Optional, Iterator
 from typing_extensions import Literal
 
 from .util import ObjectId
 from .heap_object_tracking import HeapObjectTracker
-
 
 object_id_to_heap_element_map: Dict[Union[ObjectId, int, str], HeapElement] = {}
 def getHeapElement(concrete: Any, heap_object_tracker: HeapObjectTracker, nameStr: str = "") -> HeapElement:
@@ -20,9 +20,10 @@ def getHeapElement(concrete: Any, heap_object_tracker: HeapObjectTracker, nameSt
 
 class HeapElement(object):
   object_id: Union[ObjectId, int, str]
-  collection_heap_elems: Optional[Union[List[SymbolicElement], Dict[SymbolicElement, SymbolicElement]]] 
+  collection_heap_elems: Union[SymbolicElement, List[SymbolicElement], Dict[SymbolicElement, SymbolicElement]]
   collection_counter: int
   collection_prefix: str
+  metadata: Any #Currently used for storing closure information. only allocated by make_function
 
   def __init__(self, concrete: Any, heap_object_tracker: HeapObjectTracker, namePrefix: str = "") -> None:
     assert not isinstance(concrete, HeapElement), "Did not expect a HeapElement here"
@@ -44,18 +45,33 @@ class HeapElement(object):
         self.collection_heap_elems.append(SymbolicElement("slice%05d_start", getHeapElement(concrete.start, heap_object_tracker, "slice%05d_start|")))
         self.collection_heap_elems.append(SymbolicElement("slice%05d_stop", getHeapElement(concrete.stop, heap_object_tracker, "slice%05d_stop|")))
         self.collection_heap_elems.append(SymbolicElement("slice%05d_step", getHeapElement(concrete.step, heap_object_tracker, "slice%05d_step|")))
+      elif isinstance(concrete, CellType):
+        pass #Nothing done for Cells
       elif isinstance(concrete, dict):
+        print(concrete)
         raise Exception("Not handled HeapElements for dicts")
     else:
       assert isinstance(concrete, (int, str)), "Unhandled data type"
       self.object_id = concrete #int or str
+
+  def list_append(self, to_append: StackElement, heap_object_tracker: HeapObjectTracker) -> SymbolicElement:
+    currentSize = len(self.collection_heap_elems)
+    namePrefix = "hpo%05d|"%self.object_id.id 
+    nameStr = namePrefix + "\'\'nameless%05d"%(currentSize)
+    self.collection_counter += 1 #Adding one element to the collection
+    symbVal = SymbolicElement(nameStr, getHeapElement(to_append, heap_object_tracker, nameStr + "|"))
+    self.collection_heap_elems.append(symbVal)
+    return symbVal
+
+  def __hash__(self) -> int:
+      return self.object_id.__hash__()
 
 class SymbolicElement(object):
   var_name: str
   heap_elem: HeapElement
   version: int
 
-  def __init__(self, var_name: str, elems: Union[HeapElement, StackElement], version = 0) -> None:
+  def __init__(self, var_name: str, elems: Union[HeapElement, StackElement, None], version = 0) -> None:
     if isinstance(elems, HeapElement):
       self.var_name = var_name
       self.heap_elem = elems
@@ -64,8 +80,16 @@ class SymbolicElement(object):
       self.var_name = var_name
       self.heap_elem = elems.heap_elem 
       self.version = elems.version + 1
+    elif elems is None: # Allowed for cell and free variables for a code object
+      self.var_name = var_name
+      self.heap_elem = elems
+      self.version = version 
     else:
       raise Exception("Unexpected type")
+
+  def populate(self, elems: Union[HeapElement, StackElement, None]) -> None:
+    assert self.heap_elem is None, "Cannot overwrite HeapElement corresponding to a SymbolicElement if it is not already None"
+    self.heap_elem = elems
 
 stackElementCount = 0
 
@@ -84,8 +108,10 @@ class StackElement(object):
     elif isinstance(elems, SymbolicElement):
       self.heap_elem = elems.heap_elem
       self.version = elems.version + 1
+    elif elems is None:
+      raise Exception("Cell var not initialized before bringing onto stack")
     else:
-        raise Exception("Unexpected type")
+      raise Exception("Unexpected type")
 
   def duplicate(self) -> StackElement:
       return StackElement(self.heap_elem, self.version)

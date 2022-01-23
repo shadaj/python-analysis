@@ -12,10 +12,10 @@ patcher.install()
 # from demos.quicksort import quicksort_return
 # from demos.mergesort import merge2
 # from demos.simple import trial
-from demos.bubblesort import bubble, bubble_for
+# from demos.bubblesort import bubble, bubble_for
 # from demos.heapsort import heapsort
-# from demos.matmul import matmul, matmul2
-from demos.dp import coinChange
+from demos.matmul import *
+# from demos.dp import coinChange
 import random
 random.seed(100)
 
@@ -23,29 +23,34 @@ random.seed(100)
 # with DataTracingReceiver():
 #   trial(arr)
 
-arr = [random.randint(0, 100) for i in range(25)]
-orig_arr = list(arr)
-receiver = DataTracingReceiver()
-# with StackTrackingReceiver():
-with receiver:
-  # quicksort_return(arr)
-  bubble(arr)
-  # arr = merge2(arr)
+# arr = [random.randint(0, 100) for i in range(25)]
+# orig_arr = list(arr)
+# receiver = DataTracingReceiver()
+# # with StackTrackingReceiver():
+# with receiver:
+#   trial(arr)
+#   # quicksort_return(arr)
+#   # bubble(arr)
+#   # arr = merge2(arr)
 
-  # heapsort(arr)
+#   # heapsort(arr)
 
 # print("orig: " + str(orig_arr))
 # print("out: " + str(arr))
 
-# I = 4
-# J = 4
-# K = 4
-# a = [[random.randint(0, 10) for i in range(J)] for j in range(I)]
-# b = [[random.randint(0, 10) for i in range(K)] for j in range(J)]
-# c = [[0 for i in range(K)] for j in range(I)]
+I = 4
+J = 4
+K = 4
+a = [[random.randint(0, 10) for i in range(J)] for j in range(I)]
+b = [[random.randint(0, 10) for i in range(K)] for j in range(J)]
+c = [[0 for i in range(K)] for j in range(I)]
 
-# with DataTracingReceiver():
-#   matmul2(a, b, c)
+with DataTracingReceiver():
+  matmul_strassen(a, b)
+
+# matmul2_for(a, b, c)
+# print(c)
+# c = matmul_strassen(a, b)
 
 # print(a)
 # print(b)

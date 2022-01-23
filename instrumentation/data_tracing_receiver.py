@@ -20,23 +20,30 @@ from .memory_graph_generator import *
 class FunctionCallHandled(object):
   return_on_stack: bool
   arg_mapping: Dict[str, StackElement]
+  closure_mapping: Dict[str, SymbolicElement]
 
-  def __init__(self, arg_mapping: Dict[str, StackElement]) -> None:
+  def __init__(self, arg_mapping: Dict[str, StackElement], closure_mapping: Dict[str, SymbolicElement]) -> None:
     self.return_on_stack = False
     self.arg_mapping = arg_mapping
+    self.closure_mapping = closure_mapping
 
 
 class DataTracingReceiver(EventReceiver):
   function_call_stack: List[Any]
   heap_object_tracking: HeapObjectTracker
   frame_tracking: HeapObjectTracker
-  cell_to_frame: Dict[int, Union[FrameType, int]]
+  cell_to_frame: Dict[Union[int, str, ObjectId], int]
   already_in_receiver: bool = False
   symbolic_stack: List[StackElement]
   frame_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
+  cell_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
+  free_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
+  closure_cells: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
+  closure_heap_to_symb: Dict[HeapElement, Tuple[SymbolicElement, str]]
   global_variables: Dict[str, SymbolicElement]
-  pre_op_stack: List[Union[FunctionCallHandled, Tuple[StackElement, StackElement]]]
+  pre_op_stack: List[Union[FunctionCallHandled, Tuple[StackElement, StackElement], Tuple[StackElement, StackElement, StackElement]]]
   frame_stack: List[FrameType]
+  pre_instrument_state_for_iter: bool = False
 
   def __init__(self) -> None:
     self.function_call_stack = []
@@ -45,6 +52,10 @@ class DataTracingReceiver(EventReceiver):
     self.cell_to_frame = {}
     self.symbolic_stack = []
     self.frame_variables = {}
+    self.cell_variables = {}
+    self.free_variables = {}
+    self.closure_cells = {}
+    self.closure_heap_to_symb = {}
     self.global_variables = {}
     self.pre_op_stack = []
     self.frame_stack = []
@@ -95,6 +106,9 @@ class DataTracingReceiver(EventReceiver):
       self.frame_stack.append(cur_frame)
       assert cur_frame not in self.frame_variables, "Cannot reenter a previously exited context"
       self.frame_variables[cur_frame] = {}
+      self.cell_variables[cur_frame] = {}
+      self.free_variables[cur_frame] = {}
+      self.closure_cells[cur_frame] = {}
 
       # frameId used for visualization only
       frameId = self.frame_tracking.get_object_id(cur_frame)
@@ -105,7 +119,15 @@ class DataTracingReceiver(EventReceiver):
         for local, value in cur_frame.f_locals.items():
           valueHeap = getHeapElement(value, self.heap_object_tracking)
           self.frame_variables[cur_frame][local] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,local), valueHeap)
+
+        assert len(cur_frame.f_code.co_freevars) == 0, "Not handled free variable function called from non-instrumented or top frame"
       else:
+        # handle closures
+        for free_var in cur_frame.f_code.co_freevars:
+          assert free_var not in self.pre_op_stack[-1].arg_mapping.keys(), "Variable cant be free variable AND function argument"
+          self.free_variables[cur_frame][free_var] = self.pre_op_stack[-1].closure_mapping[free_var]
+          assert isinstance(self.pre_op_stack[-1].closure_mapping[free_var], SymbolicElement), "Expected symbolic element to handle closures"
+
         for name, value in self.pre_op_stack[-1].arg_mapping.items():
           assert isinstance(value, StackElement), "Expected StackElement Instance"
           self.frame_variables[cur_frame][name] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,name), value)
@@ -113,6 +135,7 @@ class DataTracingReceiver(EventReceiver):
           add_dependency(self.frame_variables[cur_frame][name], value)
           #add_dependency_not_on_stack(self.frame_variables[cur_frame][name], value)
 
+       
         # handle default arguments
         for local, value in cur_frame.f_locals.items():
           if local not in self.frame_variables[cur_frame]:
@@ -120,8 +143,19 @@ class DataTracingReceiver(EventReceiver):
             valueHeap = getHeapElement(value, self.heap_object_tracking)
             self.frame_variables[cur_frame][local] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,local), valueHeap)
 
+      for cell_var in cur_frame.f_code.co_cellvars:
+        if cell_var not in self.frame_variables[cur_frame]:
+          self.cell_variables[cur_frame][cell_var] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,cell_var), None) #Uninitialized
+        else:
+          self.cell_variables[cur_frame][cell_var] = self.frame_variables[cur_frame][cell_var]
+
     # frameId used for visualization only
     frameId = self.frame_tracking.get_object_id(cur_frame)
+
+    if self.pre_instrument_state_for_iter == True:
+      if opcode == "JUMP_TARGET" or not (opname[opcode] == "FOR_ITER" and is_post):
+        self.symbolic_stack.pop() #Popping off the iterator of the for loop
+      self.pre_instrument_state_for_iter = False
 
     if opcode == "JUMP_TARGET":
       pass
@@ -143,8 +177,13 @@ class DataTracingReceiver(EventReceiver):
             if i < len(symbolic_stack_args):
               args_mapping[arg] = symbolic_stack_args[i]
 
+        if hasattr(function_args_id_stack[0], "metadata"):
+          closure_dict = function_args_id_stack[0].metadata
+        else:
+          closure_dict = {}
+
         self.function_call_stack.append(function_args_id_stack[0])
-        self.pre_op_stack.append(FunctionCallHandled(args_mapping))
+        self.pre_op_stack.append(FunctionCallHandled(args_mapping, closure_dict))
 
         # TODO: Uninstrumentable function dependencies where None is returned:
         if function_object == list.append:
@@ -262,19 +301,62 @@ class DataTracingReceiver(EventReceiver):
         self.symbolic_stack.append(stackVal)
         add_dependency(stackVal, self.frame_variables[cur_frame][arg])
         assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
+      elif opname[opcode] == "LOAD_DEREF":
+        assert is_post
+        if "cell" in arg:
+          varName = arg["cell"]
+          assert isinstance(self.cell_variables[cur_frame][varName], SymbolicElement), "Type mismatch"
+          symbVal = self.cell_variables[cur_frame][varName]
+          stackVal = StackElement(symbVal)
+        elif "free" in arg:
+          varName = arg["free"]
+          assert isinstance(self.free_variables[cur_frame][varName], SymbolicElement), "Type mismatch"
+          symbVal = self.free_variables[cur_frame][varName]
+          stackVal = StackElement(symbVal)
+        else:
+          raise Exception("Unexpected arg type")
+        self.symbolic_stack.append(stackVal)
+        add_dependency(stackVal, symbVal)
+        assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
+      elif opname[opcode] == "LOAD_CLOSURE":
+        assert is_post
+        closureHeapElem = object_id_stack[0]
+        if "cell" in arg:
+          varName = arg["cell"]
+          derefSymbVal = self.cell_variables[cur_frame][varName]
+        elif "free" in arg:
+          varName = arg["free"]
+          derefSymbVal = self.free_variables[cur_frame][varName]
+        else:
+          raise Exception("Unexpected arg type")
+        if varName not in self.closure_cells[cur_frame]:
+          self.closure_cells[cur_frame][varName] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,varName), closureHeapElem)
+        closureSymbVal = self.closure_cells[cur_frame][varName]
+        self.closure_heap_to_symb[closureSymbVal.heap_elem] = (derefSymbVal, varName)
+        closureStackEl = StackElement(closureSymbVal)
+        self.symbolic_stack.append(closureStackEl)
+        add_dependency(closureStackEl, closureSymbVal)
+      elif opname[opcode] == "LIST_APPEND":
+        assert not is_post
+        appendedStackElement = self.symbolic_stack.pop()
+        listStackElement = self.symbolic_stack[-arg]
+        assert hasattr(listStackElement.heap_elem, "collection_heap_elems"), "Expected a symbolic collection"
+        symbVal = listStackElement.heap_elem.list_append(appendedStackElement, self.heap_object_tracking)
+        add_dependency(symbVal, appendedStackElement)
       elif opname[opcode] == "GET_ITER":
         assert is_post
         self.symbolic_stack.pop() #Popping the original collection from symbolic stack
-        # The concrete stack actually has an iter object however which gets popped automatically when iterator exhausts
-        #
-        # We do not add any symbolic stac element for the iterator as it is not accessed otherwise. GET_ITER is always followed 
-        # by FOR_ITER which would pop the iterator
+        iteratorHeapValue = object_id_stack[0]
+        iteratorStackElement = StackElement(iteratorHeapValue)
+        self.symbolic_stack.append(iteratorStackElement)
       elif opname[opcode] == "FOR_ITER":
-        assert is_post
-        iterateHeapValue = object_id_stack[-1]
-        iterateStackElement = StackElement(iterateHeapValue)
-        self.symbolic_stack.append(iterateStackElement)
-        # See GET_ITER notes
+        if not is_post:
+          self.pre_instrument_state_for_iter = True
+        else:
+          iterateHeapValue = object_id_stack[-1]
+          iterateStackElement = StackElement(iterateHeapValue)
+          self.symbolic_stack.append(iterateStackElement)
+          # See GET_ITER notes
       elif opname[opcode] == "BUILD_LIST" or opname[opcode] == "BUILD_SLICE" or opname[opcode] == "BUILD_TUPLE":
         assert is_post
         newListHeap = object_id_stack[0]
@@ -282,6 +364,10 @@ class DataTracingReceiver(EventReceiver):
         # TODO TODO TODO: Constructor dependencies
         # for i in range(int(arg)):
         #   add_dependency(newListSymStack, self.symbolic_stack[- i - 1])
+        toBePopped = self.symbolic_stack[len(self.symbolic_stack) - int(arg):]
+        for i, stackElement in enumerate(toBePopped):
+          assert newListSymStack.heap_elem.collection_heap_elems[i].heap_elem == stackElement.heap_elem, "Heap object modified unexpectedly"
+          add_dependency(newListSymStack.heap_elem.collection_heap_elems[i], stackElement)
         self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - int(arg)]
         self.symbolic_stack.append(newListSymStack)  
       elif opname[opcode] == "STORE_NAME" or opname[opcode] == "STORE_FAST":
@@ -299,16 +385,25 @@ class DataTracingReceiver(EventReceiver):
         assert isinstance(stackVal, StackElement), "Type mismatch"
         # symbVal.heap_elem = stackVal.heap_elem ALREADY HANDLED INSIDE ADD_DEPENDENCY
         add_dependency(symbVal, stackVal)
-      elif opname[opcode] == "LOAD_DEREF":
-        assert False, "Havent checked"
-        resolved_frame = self.get_var_reference_frame(cur_frame, arg)
-        var_name = arg["cell"] if "cell" in arg else arg["free"]
-        self.load_onto_symbolic_stack(object_id_stack, resolved_frame, var_name)
       elif opname[opcode] == "STORE_DEREF":
-        assert False, "Havent Checked"
-        resolved_frame = self.get_var_reference_frame(cur_frame, arg)
-        var_name = arg["cell"] if "cell" in arg else arg["free"]
-        self.store_from_symbolic_stack(resolved_frame, var_name)
+        assert not is_post
+        stackVal = self.symbolic_stack.pop()
+        if "cell" in arg:
+          varName = arg["cell"]
+          assert varName in self.cell_variables[cur_frame], "Symbolic Value should be initialized when entered into a context"
+          if self.cell_variables[cur_frame][varName].heap_elem is None:
+            self.cell_variables[cur_frame][varName].populate(stackVal)
+          symbVal = self.cell_variables[cur_frame][varName]
+        elif "free" in arg:
+          varName = arg["free"]
+          assert varName in self.free_variables[cur_frame], "Symbolic Value should be initialized when entered into a context"
+          symbVal = self.free_variables[cur_frame][varName]
+          assert symbVal.heap_elem is not None, "Free variable unbounded"
+        else:
+          raise Exception("Unexpected arg type")
+        assert isinstance(symbVal, SymbolicElement), "Type mismatch"
+        assert isinstance(stackVal, StackElement), "Type mismatch"
+        add_dependency(symbVal, stackVal)
       elif opname[opcode] == "BINARY_SUBSCR":
         if not is_post:
           index = self.symbolic_stack.pop()
@@ -317,7 +412,6 @@ class DataTracingReceiver(EventReceiver):
         else:
           collection, index = self.pre_op_stack.pop()
 
-          
           #if collection.is_cow_pointer and collection.cow_latest_value and collection.cow_latest_value.collection_elems:
           if hasattr(collection.heap_elem, "collection_heap_elems"):
             #TODO: Handle case if there may be side effects caused by custom __index__ for custom objects
@@ -378,12 +472,6 @@ class DataTracingReceiver(EventReceiver):
         #######
         # else:
         #   raise Exception("Cannot store into non-cow collection")
-      elif opname[opcode] == "LOAD_CLOSURE":
-        assert False, "Not examined yet"
-        if not object_id_stack[0].id in self.cell_to_frame:
-          self.cell_to_frame[object_id_stack[0].id] = self.frame_tracking.get_object_id(cur_frame)
-        assert False, "Change append call to symbolicstack"
-        self.symbolic_stack.append(StackElement(object_id_stack[0], opcode, []))
       elif opname[opcode] == "SETUP_LOOP":
         pass
       elif opname[opcode] == "UNPACK_SEQUENCE":
@@ -392,7 +480,11 @@ class DataTracingReceiver(EventReceiver):
         sequenceSym = self.symbolic_stack.pop()
         assert numElements == len(sequenceSym.heap_elem.collection_heap_elems)
         for i in range(numElements):
-          self.symbolic_stack.append(StackElement(sequenceSym.heap_elem.collection_heap_elems[- i - 1]))
+          symbVal = sequenceSym.heap_elem.collection_heap_elems[- i - 1]
+          stackElem = StackElement(symbVal)
+          assert symbVal.heap_elem == stackElem.heap_elem, "Heap object modified unexpectedly"
+          self.symbolic_stack.append(stackElem)
+          add_dependency(stackElem, symbVal)
       elif opname[opcode] in binary_ops:
         if not is_post:
           tos = self.symbolic_stack.pop()
@@ -410,6 +502,36 @@ class DataTracingReceiver(EventReceiver):
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
           add_dependency2(stackEl, cur_inputs[0], cur_inputs[1])
+      elif opname[opcode] == "MAKE_FUNCTION":
+        if not is_post:
+          tos = self.symbolic_stack.pop()
+          tos1 = self.symbolic_stack.pop()
+          if int(arg) != 0:
+            assert int(arg) == 8, "Unhnadled case"
+            tos2 = self.symbolic_stack.pop()
+            self.pre_op_stack.append((tos2, tos1, tos))
+          else:
+            self.pre_op_stack.append((tos1, tos))
+        else:
+          cur_inputs = self.pre_op_stack.pop()
+          stackEl = StackElement(object_id_stack[0])
+          self.symbolic_stack.append(stackEl)
+          if int(arg) != 0:
+            assert int(arg) == 8, "Unhnadled case"
+            closureListStackEl = cur_inputs[-3]
+            closureCellSymbVal = closureListStackEl.heap_elem.collection_heap_elems
+            assert isinstance(closureCellSymbVal, list)
+            
+            closure_dict = {}
+            for cellSymbVal in closureCellSymbVal:
+              symbVal, varName = self.closure_heap_to_symb[cellSymbVal.heap_elem]
+              closure_dict[varName] = symbVal
+
+            stackEl.heap_elem.metadata = closure_dict
+            
+            add_dependency3(stackEl, cur_inputs[0], cur_inputs[1], cur_inputs[2])
+          else:
+            add_dependency2(stackEl, cur_inputs[0], cur_inputs[1])
       else:
         raise NotImplementedError(opname[opcode])
       

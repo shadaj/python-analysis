@@ -35,6 +35,17 @@ def add_dependency2(child: Union[SymbolicElement, StackElement], parent1: Union[
   print("Parent2: ", str(parent2))
   add_dependency_internal([(child, parent1), (child, parent2)])
 
+def add_dependency3(child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], parent3: Union[SymbolicElement, StackElement]) -> None:
+  global dependencyCount
+  dependencyCount += 1
+  print("DEP COUNT: ", dependencyCount)
+  print("New dependency: ")
+  print("Child: ", str(child))
+  print("Parent1: ", str(parent1))
+  print("Parent2: ", str(parent2))
+  print("Parent3: ", str(parent3))
+  add_dependency_internal([(child, parent1), (child, parent2), (child, parent3)])
+
 allObservedPositions = set()
 variableToLatestVersion = {}
 
@@ -42,7 +53,9 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
   global allObservedPositions
   if len(depList) == 2:
     assert depList[0][0] == depList[1][0], "Same child must be present in all dependencies"
-  
+  if len(depList) == 3:
+    assert depList[0][0] == depList[1][0] == depList[2][0], "Same child must be present in all dependencies"
+
   child = depList[0][0]
   newChildVersion = 1 + max(max([dep[0].version for dep in depList]), max([dep[1].version for dep in depList]))
   child.version = newChildVersion

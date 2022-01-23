@@ -40,8 +40,6 @@ binary_ops = [
   "INPLACE_AND",
   "INPLACE_XOR",
   "INPLACE_OR",
-
-  "MAKE_FUNCTION" # TODO(shadaj): can take more than two args based on flags
 ]
 
 unary_ops = [
@@ -71,6 +69,7 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "CALL_METHOD": lambda op: cast(int, op.arg) + 2, # capture all args as well as the function as well as self
   "UNPACK_SEQUENCE": 1,
   "RETURN_VALUE": 1,
+  "LIST_APPEND": lambda op: cast(int, op.arg) + 1, # arg captures the location of the list being built on the stack
 }
 
 # Opcodes to instrument after they run
@@ -88,12 +87,12 @@ post_opcode_instrument = {
   "BUILD_SLICE": 1,
   "BUILD_TUPLE": 1,
   "LOAD_METHOD": 2, # capture method and self parameter
-  "GET_ITER": 0, # we dont capture concrete stack as iterator is ignored symbolically
-  "FOR_ITER": 1,
+  "GET_ITER": 1, 
 }
 
 pre_and_post_opcode_instrument: Dict[str, Tuple[Union[int, Callable[[Instr], int]], Union[int, Callable[[Instr], int]]]] = {
-
+  "FOR_ITER": (1,1),
+  "MAKE_FUNCTION": (lambda op: 2 if cast(int, op.arg) == 0 else 3, 1),
 }
 
 for op in binary_ops:
