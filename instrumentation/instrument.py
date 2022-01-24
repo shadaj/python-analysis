@@ -9,6 +9,11 @@ from typing_extensions import Literal
 
 # Mappings from op to the size of the stack to report
 
+ignore_ops = [
+  "JUMP_ABSOLUTE",
+  "NOP",
+]
+
 binary_ops = [
   "BINARY_POWER",
   "BINARY_MULTIPLY",
@@ -57,7 +62,6 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "STORE_DEREF": 1,
   "STORE_ATTR": 2,
   "STORE_SUBSCR": 3,
-  "LOAD_ATTR": 1,
   "POP_TOP": 1,
   "POP_JUMP_IF_TRUE": 1,
   "POP_JUMP_IF_FALSE": 1,
@@ -65,8 +69,6 @@ pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
   "ROT_THREE": 3,
   "DUP_TOP_TWO": 2,
   "DUP_TOP": 1,
-  "CALL_FUNCTION": lambda op: cast(int, op.arg) + 1, # capture all args as well as the function
-  "CALL_METHOD": lambda op: cast(int, op.arg) + 2, # capture all args as well as the function as well as self
   "UNPACK_SEQUENCE": 1,
   "RETURN_VALUE": 1,
   "LIST_APPEND": lambda op: cast(int, op.arg) + 1, # arg captures the location of the list being built on the stack
@@ -78,11 +80,8 @@ post_opcode_instrument = {
   "LOAD_FAST": 1,
   "LOAD_DEREF": 1,
   "LOAD_CLOSURE": 1,
-  "LOAD_ATTR": 1,
   "LOAD_CONST": 1,
   "LOAD_GLOBAL": 1,
-  "CALL_FUNCTION": 1, # capture the return value
-  "CALL_METHOD": 1, # capture the return value
   "BUILD_LIST": 1,
   "BUILD_SLICE": 1,
   "BUILD_TUPLE": 1,
@@ -92,11 +91,18 @@ post_opcode_instrument = {
 
 pre_and_post_opcode_instrument: Dict[str, Tuple[Union[int, Callable[[Instr], int]], Union[int, Callable[[Instr], int]]]] = {
   "FOR_ITER": (1,1),
+  "LOAD_ATTR": (1,1),
+  "CALL_METHOD": (lambda op: cast(int, op.arg) + 2, 1), # capture all args as well as the function as well as self, then capture return value
+  "CALL_FUNCTION": (lambda op: cast(int, op.arg) + 1, 1), # capture all args as well as the function, then capture return value
   "MAKE_FUNCTION": (lambda op: 2 if cast(int, op.arg) == 0 else 3, 1),
 }
 
 for op in binary_ops:
   pre_opcode_instrument[op] = 2
+  post_opcode_instrument[op] = 1
+
+for op in unary_ops:
+  pre_opcode_instrument[op] = 1
   post_opcode_instrument[op] = 1
 
 for op in pre_and_post_opcode_instrument:
@@ -271,7 +277,10 @@ def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
       )
     
     if isinstance(op, Instr) and op.name not in pre_opcode_instrument and op.name not in post_opcode_instrument:
-      print(f"IGNORING OPERATION {op.name}")
+      if op.name in ignore_ops:
+        print(f"IGNORING OPERATION {op.name}")
+      else:
+        raise Exception(f"Unhandled Operation for Instrumentation: {op.name}")
 
     instrumented.append(op)
 

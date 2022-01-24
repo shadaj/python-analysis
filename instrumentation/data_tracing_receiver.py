@@ -5,9 +5,11 @@ from types import FrameType
 from bytecode import Bytecode
 import inspect
 
+from networkx.algorithms.operators import unary
+
 from .event_receiver import EventReceiver
 from .heap_object_tracking import HeapObjectTracker
-from .instrument import binary_ops
+from .instrument import binary_ops, unary_ops
 from .util import ObjectId, get_instrumented_program_frame
 
 from typing import Any, Dict, List, Tuple, Union, Optional
@@ -258,6 +260,24 @@ class DataTracingReceiver(EventReceiver):
         self.symbolic_stack.append(tos)
         self.symbolic_stack.append(tos2)
         self.symbolic_stack.append(tos1)
+      elif opname[opcode] == "ROT_FOUR":
+        tos = self.symbolic_stack.pop()
+        tos1 = self.symbolic_stack.pop()
+        tos2 = self.symbolic_stack.pop()
+        tos3 = self.symbolic_stack.pop()
+        self.symbolic_stack.append(tos)
+        self.symbolic_stack.append(tos3)
+        self.symbolic_stack.append(tos2)
+        self.symbolic_stack.append(tos1)
+      elif opname[opcode] == "ROT_N":
+        count = int(arg)
+        assert count > 1, "Should have multiple elements for stack rotation"
+        tosses = []
+        for i in range(count):
+          tosses.append(self.symbolic_stack.pop())
+        self.symbolic_stack.append(tosses[0])
+        for i in range(count-1, 0, -1):
+          self.symbolic_stack.append(tosses[i])
       elif opname[opcode] == "DUP_TOP_TWO":
         tos = self.symbolic_stack.pop()
         tos2 = self.symbolic_stack.pop()
@@ -493,15 +513,26 @@ class DataTracingReceiver(EventReceiver):
           ########
           # ONLY  IF the __op__ method is not defined on 1st argument
           ########
+          # TODO: Update Unary_ops too if changed
         else:
           cur_inputs = self.pre_op_stack.pop()
 
           ########
           # How to do this
           ########
+          # TODO: Update Unary_ops too if changed
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
           add_dependency2(stackEl, cur_inputs[0], cur_inputs[1])
+      elif opname[opcode] in unary_ops:
+        if not is_post:
+          tos = self.symbolic_stack.pop()
+          self.pre_op_stack.append((tos,))
+        else:
+          cur_inputs = self.pre_op_stack.pop()
+          stackEl = StackElement(object_id_stack[0])
+          self.symbolic_stack.append(stackEl)
+          add_dependency(stackEl, cur_inputs[0])
       elif opname[opcode] == "MAKE_FUNCTION":
         if not is_post:
           tos = self.symbolic_stack.pop()
