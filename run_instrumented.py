@@ -1,3 +1,5 @@
+import imp
+from re import L
 from textwrap import dedent
 from dis import opname
 
@@ -9,163 +11,90 @@ from instrumentation.exec import exec_instrumented
 patcher = PatchingPathFinder()
 patcher.install()
 
-# from demos.quicksort import quicksort_return
-# from demos.mergesort import merge2
-# from demos.simple import trial
-# from demos.bubblesort import bubble, bubble_for
-# from demos.heapsort import heapsort
-from demos.matmul import *
-# from demos.dp import coinChange
 import random
-random.seed(100)
 
-# arr = [random.randint(0, 10) for i in range(7)]
-# with DataTracingReceiver():
-#   trial(arr)
+receiver = DataTracingReceiver()
 
-# arr = [random.randint(0, 100) for i in range(25)]
-# orig_arr = list(arr)
-# receiver = DataTracingReceiver()
-# # with StackTrackingReceiver():
-# with receiver:
-#   trial(arr)
-#   # quicksort_return(arr)
-#   # bubble(arr)
-#   # arr = merge2(arr)
+def testMergeSort():
+  from demos.mergesort import merge2
+  arr = [random.randint(0,10) for i in range(25)]
+  print(arr)
+  with receiver:
+    arr = merge2(arr)
+  print("MergeSorted:", arr)
 
-#   # heapsort(arr)
+def testQuickSort():
+  from demos.quicksort import quicksort_return
+  arr = [random.randint(0,10) for i in range(25)]
+  print(arr)
+  with receiver:
+    arr = quicksort_return(arr)
+  print("QuickSorted:", arr)
 
+def testBubbleSort():
+  from demos.bubblesort import bubble, bubble_for
+  arr = [random.randint(0,10) for i in range(25)]
+  print(arr)
+  with receiver:
+    arr = bubble_for(arr)
+  print("BubbleSorted:", arr)
+
+def testHeapSort():
+  from demos.heapsort import heapsort
+  arr = [random.randint(0,10) for i in range(25)]
+  print(arr)
+  with receiver:
+    arr = heapsort(arr)
+  print("HeapSorted:", arr)
+
+def testMatrixMultiplication():
+  from demos.matmul import matmul_for, matmul_recursive, matmul_strassen
+  I = 4
+  J = 4
+  K = 4
+  a = [[random.randint(0, 10) for i in range(J)] for j in range(I)]
+  b = [[random.randint(0, 10) for i in range(K)] for j in range(J)]
+  c = [[0 for i in range(K)] for j in range(I)]
+  print(a, b, c)
+  with receiver:
+    c = matmul_strassen(a, b)
+    # matmul_for(a, b, c)
+    # c = matmul_recursive(a, b)
+  print("Multiplication: ", a, b, c)
+
+def testDp():
+  from demos.dp import coinChange
+  coins = [1,2,5]
+  amount = 11
+  with receiver:
+    ans = coinChange(coins, amount)
+  print("Coin change: ", coins, amount, ans)
+
+def testTrial():
+  from demos.simple import trial
+  a = [1,2,3]
+  with receiver:
+    trial(a)
+
+
+testMergeSort()
+
+patcher.uninstall()
+
+# allNodeDetails, allEdgeDetails, nodeEdgeCounts = receiver.receiverData
+# import numpy as np
+
+# def flatten(lol):
+#   return [i for l in lol for i in l]
+
+# allNodeDetails = np.asarray(flatten(allNodeDetails))
+# allEdgeDetails = np.asarray(flatten(allEdgeDetails))
+# nodeEdgeCounts = np.concatenate([np.asarray(nodeEdgeCounts), np.expand_dims(np.asarray(labels), axis=1)], axis=1)
+
+# mode = "dump"
+
+# np.save("/usr/local/lib/python3.9/site-packages/jraph/nodes%s.npy"%mode, allNodeDetails)
+# np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
+# np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
 # print("orig: " + str(orig_arr))
 # print("out: " + str(arr))
-
-I = 4
-J = 4
-K = 4
-a = [[random.randint(0, 10) for i in range(J)] for j in range(I)]
-b = [[random.randint(0, 10) for i in range(K)] for j in range(J)]
-c = [[0 for i in range(K)] for j in range(I)]
-
-with DataTracingReceiver():
-  matmul_strassen(a, b)
-
-# matmul2_for(a, b, c)
-# print(c)
-# c = matmul_strassen(a, b)
-
-# print(a)
-# print(b)
-# print(c)
-
-# coins = [1,2,5]
-# amount = 11
-
-# with DataTracingReceiver():
-#   ans = coinChange(coins, amount)
-
-# print(ans)
-
-
-# def pretty_symbolic(symbolic):
-#   if symbolic.is_cow_pointer:
-#     return pretty_symbolic(symbolic.cow_latest_value)
-#   elif symbolic.collection_elems:
-#     return "[" + ", ".join(pretty_symbolic(elem) for elem in symbolic.collection_elems) + "]"
-#   else:
-#     return receiver.stringify_maybe_object_id(symbolic.concrete)
-
-# orig: [2, 7, 7, 2, 6, 5, 6, 8, 1, 8, 1, 1, 7, 4, 0]
-# out: [0, 1, 1, 1, 2, 2, 4, 5, 6, 6, 7, 7, 7, 8, 8]
-
-# def print_deps(symbolic, indent_level=0):
-#   indent = '  ' * indent_level
-#   if symbolic.is_cow_pointer:
-#     print_deps(symbolic.cow_latest_value, indent_level)
-#   elif symbolic.collection_elems:
-#     print(f"{indent}collection with elements:")
-#     for elem in symbolic.collection_elems:
-#       print_deps(elem, indent_level + 1)
-#   elif opname[symbolic.opcode] == "BINARY_SUBSCR":
-#     print(f"{indent}{pretty_symbolic(symbolic)} depends on index {symbolic.deps[1]} of collection {pretty_symbolic(symbolic.deps[0])}")
-#     print_deps(symbolic.deps[0].collection_elems[symbolic.deps[1]], indent_level + 1)
-#   else:
-#     print(f"{indent}{pretty_symbolic(symbolic)} depends via {opname[symbolic.opcode]}")
-#     for dep in symbolic.deps:
-#       print_deps(dep, indent_level + 1)
-
-
-
-# print_deps(receiver.symbolic_stack.pop())
-
-# import numpy as np
-# arr = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-# with StackTrackingReceiver():
-#   np.linalg.eigvals(arr)
-
-# source = dedent(
-  # """
-  # def myFunc():
-  #   x = -1
-  #   data = list(range(5))
-  #   for i in data:
-  #     if i == 3:
-  #       break
-  #     else:
-  #       while i > 0:
-  #         x += i
-  #         i -= 1
-  # myFunc()
-  # """
-# )
-
-# source = dedent(
-  # """
-  # def factorial(i):
-  #   if i == 0:
-  #     return 1
-  #   else:
-  #     return i * factorial(i - 1)
-
-  # factorial(5)
-  # """
-# )
-
-# source = dedent(
-  # """
-  # my_arr = [1, 2, 3]
-  # for i in range(0, 3):
-  #   my_arr[i] = my_arr[i] + 1
-  # """
-# )
-
-# source = dedent(
-#   """
-#   x = 1 # global so won't show up in trace because we don't instrument globals yet
-#   y = 2
-#   z = 3
-
-
-#   def f1():
-#       print(x)
-#       w = 4
-#       u = 5
-
-#       def f2():
-#           print(x)
-#           u = 6
-#           print(u)
-#           print(w)
-
-#           def f3():
-#               print(u)
-#               print(w)
-#               print(x)
-
-#           f3()
-#       f2()
-
-#   f1()
-#   """
-# )
-
-# with StackTrackingReceiver():
-#   exec_instrumented(source)

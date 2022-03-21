@@ -7,6 +7,8 @@ from typing_extensions import Literal
 from .util import ObjectId
 from .heap_object_tracking import HeapObjectTracker
 
+from .helper import printDebug
+
 object_id_to_heap_element_map: Dict[Union[ObjectId, int, str], HeapElement] = {}
 def getHeapElement(concrete: Any, heap_object_tracker: HeapObjectTracker, nameStr: str = "") -> HeapElement:
   if heap_object_tracker.is_heap_object(concrete):
@@ -48,7 +50,7 @@ class HeapElement(object):
       elif isinstance(concrete, CellType):
         pass #Nothing done for Cells
       elif isinstance(concrete, dict):
-        print(concrete)
+        printDebug(concrete)
         raise Exception("Not handled HeapElements for dicts")
     else:
       assert isinstance(concrete, (int, str)), "Unhandled data type"
@@ -65,6 +67,9 @@ class HeapElement(object):
 
   def __hash__(self) -> int:
       return self.object_id.__hash__()
+
+  def __eq__(self, other) -> bool:
+      return self.object_id.__eq__(other.object_id)
 
 class SymbolicElement(object):
   var_name: str

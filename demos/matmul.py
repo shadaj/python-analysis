@@ -108,3 +108,34 @@ def matmul_strassen(a, b):
             c[i + I//2][k]        = m2[i][k] + m4[i][k]
             c[i + I//2][k + K//2] = m1[i][k] - m2[i][k] + m3[i][k] + m6[i][k]
     return c
+
+def matmul_recursive(a, b):
+    I = len(a)
+    J = len(b)
+    K = len(b[0])
+    if I <= 1:
+        return [[a[0][0] * b[0][0]]]
+    a11 = [[a[i][j] for j in range(0, J//2)] for i in range(0, I//2)]
+    a12 = [[a[i][j] for j in range(J//2, J)] for i in range(0, I//2)]
+    a21 = [[a[i][j] for j in range(0, J//2)] for i in range(I//2, I)]
+    a22 = [[a[i][j] for j in range(J//2, J)] for i in range(I//2, I)]
+    b11 = [[b[i][j] for j in range(0, K//2)] for i in range(0, J//2)]
+    b12 = [[b[i][j] for j in range(K//2, K)] for i in range(0, J//2)]
+    b21 = [[b[i][j] for j in range(0, K//2)] for i in range(J//2, J)]
+    b22 = [[b[i][j] for j in range(K//2, K)] for i in range(J//2, J)]
+    m1 = matmul_recursive(a11, b11)
+    m2 = matmul_recursive(a12, b21)
+    m3 = matmul_recursive(a11, b12)
+    m4 = matmul_recursive(a12, b22)
+    m5 = matmul_recursive(a21, b11)
+    m6 = matmul_recursive(a22, b21)
+    m7 = matmul_recursive(a21, b12)
+    m8 = matmul_recursive(a22, b22)
+    c = [[0 for j in range(K)] for i in range(I)]
+    for i in range(I//2):
+        for k in range(K//2):
+            c[i][k]               = m1[i][k] + m2[i][k]
+            c[i][k + K//2]        = m3[i][k] + m4[i][k]
+            c[i + I//2][k]        = m5[i][k] + m6[i][k]
+            c[i + I//2][k + K//2] = m7[i][k] + m8[i][k]
+    return c

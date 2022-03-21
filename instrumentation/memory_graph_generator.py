@@ -10,44 +10,50 @@ import matplotlib.pyplot as plt
 
 import copy
 
-G = nx.MultiDiGraph()
+from .helper import printDebug
 
-
-dependencyCount = 0
+generatedGraphs = 0
 
 def add_dependency(child: Union[SymbolicElement, StackElement], parent: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
   dependencyCount += 1
-  print("DEP COUNT: ", dependencyCount)
-  print("New dependency: ")
-  print("Child: ", str(child))
-  print("Parent: ", str(parent))
+  printDebug("DEP COUNT: ", dependencyCount)
+  printDebug("New dependency: ")
+  printDebug("Child: ", str(child))
+  printDebug("Parent: ", str(parent))
   child.heap_elem = parent.heap_elem
   add_dependency_internal([(child, parent)])
 
 def add_dependency2(child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
   dependencyCount += 1
-  print("DEP COUNT: ", dependencyCount)
-  print("New dependency: ")
-  print("Child: ", str(child))
-  print("Parent1: ", str(parent1))
-  print("Parent2: ", str(parent2))
+  printDebug("DEP COUNT: ", dependencyCount)
+  printDebug("New dependency: ")
+  printDebug("Child: ", str(child))
+  printDebug("Parent1: ", str(parent1))
+  printDebug("Parent2: ", str(parent2))
   add_dependency_internal([(child, parent1), (child, parent2)])
 
 def add_dependency3(child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], parent3: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
   dependencyCount += 1
-  print("DEP COUNT: ", dependencyCount)
-  print("New dependency: ")
-  print("Child: ", str(child))
-  print("Parent1: ", str(parent1))
-  print("Parent2: ", str(parent2))
-  print("Parent3: ", str(parent3))
+  printDebug("DEP COUNT: ", dependencyCount)
+  printDebug("New dependency: ")
+  printDebug("Child: ", str(child))
+  printDebug("Parent1: ", str(parent1))
+  printDebug("Parent2: ", str(parent2))
+  printDebug("Parent3: ", str(parent3))
   add_dependency_internal([(child, parent1), (child, parent2), (child, parent3)])
 
 allObservedPositions = set()
 variableToLatestVersion = {}
+
+G = nx.MultiDiGraph()
+dependencyCount = 0
+
+allNodeDetails = []
+allEdgeDetails = []
+nodeEdgeCounts = [(0,0)]
 
 def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]]) -> None:
   global allObservedPositions
@@ -84,7 +90,7 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
     allObservedPositions.add(parent.var_name)
 
 def generate_memory_graph():
-  global allObservedPositions
+  global allObservedPositions, G, dependencyCount, variableToLatestVersion, generatedGraphs, object_id_to_heap_element_map
   maxIndex = 0
   positionStrToXcoord = {}
   for positionStr in sorted(allObservedPositions, reverse=False):
@@ -134,14 +140,30 @@ def generate_memory_graph():
       newYCoord = 0
     pos[key] = (pos[key][0], newYCoord)
 
-  print(pos_raw)
-  print(pos)
+  nodeNumber = 0
+  nodeMap = {}
+  nodeDetails = []
+  edgeDetails = []
+  for i, k in pos.items():
+    nodeMap[i] = nodeNumber
+    nodeNumber += 1
+    nodeDetails.append([nodeNumber, -1, k[0]])
+  for e in G.edges:
+    edgeDetails.append([nodeMap[e[0]], nodeMap[e[1]], -1, 1.0])
+
+  allNodeDetails.append(nodeDetails)
+  allEdgeDetails.append(edgeDetails)
+  a = nodeEdgeCounts[-1]
+  nodeEdgeCounts.append((a[0] + len(nodeDetails), a[1] + len(edgeDetails)))
+
+  printDebug(pos_raw)
+  printDebug(pos)
   nx.draw_networkx_nodes(G, pos)
   nx.draw_networkx_labels(G, pos, font_size=5)
   ax = plt.gca()
   # print(nx.get_edge_attributes(G,'isShadow'))
   for e in G.edges:
-    print(e)
+    printDebug(e)
   for e in G.edges:
     if nx.get_edge_attributes(G,'sameVariableEdge')[e] == False:
       ax.annotate("",
@@ -157,4 +179,15 @@ def generate_memory_graph():
   plt.axis('off')
   plt.show()
 
-  print(sorted(allObservedPositions))
+  printDebug(sorted(allObservedPositions))
+
+  generatedGraphs += 1
+  print("Number of graphs generated: %d"%generatedGraphs)
+
+  G = nx.MultiDiGraph()
+  dependencyCount = 0
+  allObservedPositions = set()
+  variableToLatestVersion = {}
+  object_id_to_heap_element_map = {}
+
+  return allNodeDetails, allEdgeDetails, nodeEdgeCounts

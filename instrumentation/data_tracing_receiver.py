@@ -19,6 +19,8 @@ from .data_tracing_variables import *
 
 from .memory_graph_generator import *
 
+from .helper import printDebug
+
 class FunctionCallHandled(object):
   return_on_stack: bool
   arg_mapping: Dict[str, StackElement]
@@ -42,6 +44,7 @@ class DataTracingReceiver(EventReceiver):
   free_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
   closure_cells: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
   closure_heap_to_symb: Dict[HeapElement, Tuple[SymbolicElement, str]]
+  block_stack: Dict[Union[FrameType, int], List[int]]
   global_variables: Dict[str, SymbolicElement]
   pre_op_stack: List[Union[FunctionCallHandled, Tuple[StackElement, StackElement], Tuple[StackElement, StackElement, StackElement]]]
   frame_stack: List[FrameType]
@@ -58,6 +61,7 @@ class DataTracingReceiver(EventReceiver):
     self.free_variables = {}
     self.closure_cells = {}
     self.closure_heap_to_symb = {}
+    self.block_stack = {}
     self.global_variables = {}
     self.pre_op_stack = []
     self.frame_stack = []
@@ -65,7 +69,7 @@ class DataTracingReceiver(EventReceiver):
 
   def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
     super().__exit__(exc_type, exc_val, exc_tb)
-    generate_memory_graph()
+    self.receiverData = generate_memory_graph()
 
   def stringify_maybe_object_id(self, maybe_id: Union[int, ObjectId]) -> str:
     if isinstance(maybe_id, ObjectId):
@@ -111,6 +115,7 @@ class DataTracingReceiver(EventReceiver):
       self.cell_variables[cur_frame] = {}
       self.free_variables[cur_frame] = {}
       self.closure_cells[cur_frame] = {}
+      self.block_stack[cur_frame] = [0]
 
       # frameId used for visualization only
       frameId = self.frame_tracking.get_object_id(cur_frame)
@@ -160,6 +165,8 @@ class DataTracingReceiver(EventReceiver):
       self.pre_instrument_state_for_iter = False
 
     if opcode == "JUMP_TARGET":
+      pass
+    elif opname[opcode] == "JUMP_FORWARD" or opname[opcode] == "JUMP_ABSOLUTE":
       pass
     elif opname[opcode] == "CALL_FUNCTION" or opname[opcode] == "CALL_METHOD":
       if not is_post:
@@ -572,16 +579,16 @@ class DataTracingReceiver(EventReceiver):
     self.already_in_receiver = False
 
   def check_symbolic_stack(self, object_id_stack: List[Any], opcode: int) -> None:
-    print(opname[opcode])
-    print("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
-    print("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
+    printDebug(opname[opcode])
+    printDebug("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
+    printDebug("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
     for i, e in enumerate(object_id_stack):
       index_from_end = i - len(object_id_stack)
       try:
         if not self.symbolic_stack[index_from_end].heap_elem.object_id == e.object_id:
-          print(opname[opcode])
-          print("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
-          print("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
+          printDebug(opname[opcode])
+          printDebug("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
+          printDebug("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
           raise Exception(
             "Stack element " + str(i) + " is symbolically " + \
               self.stringify_maybe_object_id(self.symbolic_stack[index_from_end].heap_elem.object_id) + \

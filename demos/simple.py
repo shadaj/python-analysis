@@ -16,5 +16,11 @@
 #     a[5], a[6] = a[6], a[5]
 #     a[4], a[5] = t, a[4]
 
+# def trial(a):
+#     return [i for i in a]
+
 def trial(a):
-    return [i for i in a]
+    if a:
+        print("Blah")
+    else:
+        print("Not blah")
