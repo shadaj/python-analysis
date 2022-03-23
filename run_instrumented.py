@@ -44,7 +44,7 @@ def testHeapSort():
   arr = [random.randint(0,10) for i in range(25)]
   print(arr)
   with receiver:
-    arr = heapsort(arr)
+    heapsort(arr)
   print("HeapSorted:", arr)
 
 def testMatrixMultiplication():
@@ -77,7 +77,7 @@ def testTrial():
     trial(a)
 
 
-testMergeSort()
+testHeapSort()
 
 patcher.uninstall()
 

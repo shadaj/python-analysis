@@ -44,9 +44,9 @@ class HeapElement(object):
             self.collection_heap_elems.append(SymbolicElement(nameStr, getHeapElement(e, heap_object_tracker, nameStr + "|")))
       elif isinstance(concrete, slice):
         self.collection_heap_elems = []
-        self.collection_heap_elems.append(SymbolicElement("slice%05d_start", getHeapElement(concrete.start, heap_object_tracker, "slice%05d_start|")))
-        self.collection_heap_elems.append(SymbolicElement("slice%05d_stop", getHeapElement(concrete.stop, heap_object_tracker, "slice%05d_stop|")))
-        self.collection_heap_elems.append(SymbolicElement("slice%05d_step", getHeapElement(concrete.step, heap_object_tracker, "slice%05d_step|")))
+        self.collection_heap_elems.append(SymbolicElement("slice%05d_start"%self.object_id.id , getHeapElement(concrete.start, heap_object_tracker, "slice%05d_start|"%self.object_id.id )))
+        self.collection_heap_elems.append(SymbolicElement("slice%05d_stop"%self.object_id.id , getHeapElement(concrete.stop, heap_object_tracker, "slice%05d_stop|"%self.object_id.id )))
+        self.collection_heap_elems.append(SymbolicElement("slice%05d_step"%self.object_id.id , getHeapElement(concrete.step, heap_object_tracker, "slice%05d_step|"%self.object_id.id )))
       elif isinstance(concrete, CellType):
         pass #Nothing done for Cells
       elif isinstance(concrete, dict):

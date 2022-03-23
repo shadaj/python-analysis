@@ -54,9 +54,11 @@ dependencyCount = 0
 allNodeDetails = []
 allEdgeDetails = []
 nodeEdgeCounts = [(0,0)]
+edgeCounter = 0
+edgeMap = {}
 
 def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]]) -> None:
-  global allObservedPositions
+  global allObservedPositions, edgeCounter, edgeMap
   if len(depList) == 2:
     assert depList[0][0] == depList[1][0], "Same child must be present in all dependencies"
   if len(depList) == 3:
@@ -74,6 +76,9 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
 
   if oldChildVersion is not None:
     oldChildStr = child.var_name + "#" + str(oldChildVersion)
+    edgeCounter += 1
+    param = len(G.get_edge_data(oldChildStr, childStr, default={}))
+    edgeMap[(oldChildStr, childStr, param)] = edgeCounter
     G.add_edge(oldChildStr, childStr, sameVariableEdge = True)
 
   allObservedPositions.add(child.var_name)
@@ -83,6 +88,9 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
     parentStr = parent.var_name + "#" + str(parent.version)
 
     G.add_node(parentStr, pos=(parent.var_name, parent.version))
+    edgeCounter += 1
+    param = len(G.get_edge_data(parentStr, childStr, default={}))
+    edgeMap[(parentStr, childStr, param)] = edgeCounter
     G.add_edge(parentStr, childStr, sameVariableEdge = False)
 
     variableToLatestVersion[parent.var_name] = parent.version
@@ -90,7 +98,7 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
     allObservedPositions.add(parent.var_name)
 
 def generate_memory_graph():
-  global allObservedPositions, G, dependencyCount, variableToLatestVersion, generatedGraphs, object_id_to_heap_element_map
+  global allObservedPositions, G, dependencyCount, variableToLatestVersion, generatedGraphs, object_id_to_heap_element_map, edgeMap, edgeCounter
   maxIndex = 0
   positionStrToXcoord = {}
   for positionStr in sorted(allObservedPositions, reverse=False):
@@ -112,13 +120,24 @@ def generate_memory_graph():
       childs = [c for c in G.successors(node)]
       parents = [p for p in G.predecessors(node)]
       toRemove.append(node)
+      resultantEdgeCounter = 2**64 #There wont be graphs this large
       for parent in parents:
-        G.remove_edge(parent, node)
+        for key in list(G.get_edge_data(parent, node).keys()):
+          param = int(G.get_edge_data(parent, node, key)['sameVariableEdge'])
+          G.remove_edge(parent, node)
+          resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
+          del edgeMap[(parent, node, key)]
       for child in childs:
-        G.remove_edge(node, child)
+        for key in list(G.get_edge_data(node, child).keys()):
+          param = int(G.get_edge_data(node, child, key)['sameVariableEdge'])
+          G.remove_edge(node, child)
+          resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
+          del edgeMap[(node, child, key)]
       for child in childs:
         for parent in parents:
+          param = len(G.get_edge_data(parent, child, default={}))
           G.add_edge(parent, child, sameVariableEdge = False)
+          edgeMap[(parent, child, param)] = resultantEdgeCounter
   
   for node in toRemove:
     G.remove_node(node)
@@ -158,14 +177,29 @@ def generate_memory_graph():
 
   printDebug(pos_raw)
   printDebug(pos)
-  nx.draw_networkx_nodes(G, pos)
+  # nx.draw_networkx_nodes(G, pos)
   nx.draw_networkx_labels(G, pos, font_size=5)
   ax = plt.gca()
   # print(nx.get_edge_attributes(G,'isShadow'))
+  plt.axis('off')
+  plt.ion()
+  plt.show()
+  # print(G.edges)
+  # print(G.nodes)
+  # print(pos)
   for e in G.edges:
     printDebug(e)
-  for e in G.edges:
-    if nx.get_edge_attributes(G,'sameVariableEdge')[e] == False:
+  drawnNodes = set()
+  plt.rcParams.update({'font.size': 5})
+
+  for e in sorted(G.edges, key=lambda x: edgeMap[x]):
+    plt.pause(0.005)
+    nodes = [e[0], e[1]]
+    for node in nodes:
+      if node not in drawnNodes:
+        plt.plot([pos[node][0]], [pos[node][1]], marker='o', color='g', label=node)
+        drawnNodes.add(node)
+    if nx.get_edge_attributes(G,'sameVariableEdge')[e] == False:      
       ax.annotate("",
           xy=pos[e[1]], xycoords='data',
           xytext=pos[e[0]], textcoords='data',
@@ -176,11 +210,10 @@ def generate_memory_graph():
                   ),
                   ),
           )
-  plt.axis('off')
-  plt.show()
 
+  
   printDebug(sorted(allObservedPositions))
-
+  # plt.show()
   generatedGraphs += 1
   print("Number of graphs generated: %d"%generatedGraphs)
 
@@ -189,5 +222,7 @@ def generate_memory_graph():
   allObservedPositions = set()
   variableToLatestVersion = {}
   object_id_to_heap_element_map = {}
+  edgeCounter = 0
+  edgeMap = {}
 
   return allNodeDetails, allEdgeDetails, nodeEdgeCounts
