@@ -1,5 +1,9 @@
 from distutils.log import debug
 
+showPlot = False
+
+def isShowPlot():
+    return showPlot
 
 debugLog = False
 

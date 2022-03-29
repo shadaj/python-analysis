@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 import copy
 
-from .helper import printDebug
+from .helper import printDebug, isShowPlot
 
 generatedGraphs = 0
 
@@ -99,19 +99,22 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
 
 def generate_memory_graph():
   global allObservedPositions, G, dependencyCount, variableToLatestVersion, generatedGraphs, object_id_to_heap_element_map, edgeMap, edgeCounter
+
   maxIndex = 0
   positionStrToXcoord = {}
   for positionStr in sorted(allObservedPositions, reverse=False):
     positionStrToXcoord[positionStr] = maxIndex
     maxIndex += 1
   
-  plt.subplot(121)
+  if isShowPlot():
+    plt.subplot(121)
 
   toRemove = []
   allNodes = [h for h in G.nodes]
 
   # Pruning extra nodes. Any node which does not have "nameless" in it's name, i.e. is not a compound data structure (non primitive like int/str) 
   # is treated as a node to exclude. This is a temporary logic and can be changed in the future. #TODO Robust logic 
+  from copy import deepcopy
   for node in allNodes:
     if node not in G.nodes:
       # Element has already been deleted so we do not need to consider it anymore
@@ -122,14 +125,16 @@ def generate_memory_graph():
       toRemove.append(node)
       resultantEdgeCounter = 2**64 #There wont be graphs this large
       for parent in parents:
-        for key in list(G.get_edge_data(parent, node).keys()):
-          param = int(G.get_edge_data(parent, node, key)['sameVariableEdge'])
+        edge_data = deepcopy(G.get_edge_data(parent, node))
+        for key in list(edge_data.keys()):
+          param = int(edge_data[key]['sameVariableEdge'])
           G.remove_edge(parent, node)
           resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
           del edgeMap[(parent, node, key)]
       for child in childs:
-        for key in list(G.get_edge_data(node, child).keys()):
-          param = int(G.get_edge_data(node, child, key)['sameVariableEdge'])
+        edge_data = deepcopy(G.get_edge_data(node, child))
+        for key in list(edge_data.keys()):
+          param = int(edge_data[key]['sameVariableEdge'])
           G.remove_edge(node, child)
           resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
           del edgeMap[(node, child, key)]
@@ -177,30 +182,92 @@ def generate_memory_graph():
 
   printDebug(pos_raw)
   printDebug(pos)
-  # nx.draw_networkx_nodes(G, pos)
-  nx.draw_networkx_labels(G, pos, font_size=5)
-  ax = plt.gca()
+
+  if isShowPlot():
+    nx.draw_networkx_nodes(G, pos)
+    nx.draw_networkx_labels(G, pos, font_size=5)
+  
+  if isShowPlot():
+    ax = plt.gca()
+    plt.axis('off')
+
   # print(nx.get_edge_attributes(G,'isShadow'))
-  plt.axis('off')
-  plt.ion()
-  plt.show()
+  # plt.ion()
+  # plt.show()
   # print(G.edges)
   # print(G.nodes)
   # print(pos)
   for e in G.edges:
     printDebug(e)
   drawnNodes = set()
-  plt.rcParams.update({'font.size': 5})
+
+  if isShowPlot():
+    plt.rcParams.update({'font.size': 5})
+
+  # fig = plt.figure()
+  # ax = fig.add_subplot(111)
+
+  # minX, maxX = 2**64, -2**64
+  # minY, maxY = 2**64, -2**64
+  # for _, (x, y) in pos.items():
+  #   minX = min(minX, x)
+  #   maxX = max(maxX, x)
+  #   minY = min(minY, y)
+  #   maxY = max(maxY, y)
+
+  # x, y = [], []
+  # line1, = ax.plot(x,y,'g*')
+
+  # ax.set_xlim([minX-10, maxX+10])
+  # ax.set_ylim([minY-1, maxY+1])
+
+  attributeGraph = nx.get_edge_attributes(G,'sameVariableEdge')
 
   for e in sorted(G.edges, key=lambda x: edgeMap[x]):
-    plt.pause(0.005)
-    nodes = [e[0], e[1]]
-    for node in nodes:
-      if node not in drawnNodes:
-        plt.plot([pos[node][0]], [pos[node][1]], marker='o', color='g', label=node)
-        drawnNodes.add(node)
-    if nx.get_edge_attributes(G,'sameVariableEdge')[e] == False:      
-      ax.annotate("",
+  #   st = time()
+  #   plt.pause(0.005)
+  #   nodes = [e[0], e[1]]
+  #   for node in nodes:
+  #     if node not in drawnNodes:
+  #       x.append(pos[node][0])
+  #       y.append(pos[node][1])
+  #       drawnNodes.add(node)
+  #       line1.set_ydata(y)
+  #       line1.set_xdata(x)
+  #   if attributeGraph[e] == False:
+  #     x_, y_ = pos[e[0]]
+  #     xdx, ydy = pos[e[1]]
+  #     dx, dy = xdx - x_, ydy - y_
+  #     # ret = ax.arrow(x_, y_, dx, dy, animated=True)
+  #     # print(ret)
+  #     # input()
+  #     # ax.draw_artist(ret)
+  #   fig.canvas.draw()
+  #   fig.canvas.flush_events()
+  #   # input()
+  #   en = time()
+  #   # if attributeGraph[e] == False:
+      
+  #   # if attributeGraph[e] == False:      
+  #   #   ax.annotate("",
+  #   #       xy=pos[e[1]], xycoords='data',
+  #   #       xytext=pos[e[0]], textcoords='data',
+  #   #       arrowprops=dict(arrowstyle="->", color="0.1",
+  #   #               shrinkA=10, shrinkB=10,
+  #   #               patchA=None, patchB=None,
+  #   #               connectionstyle="arc3,rad=rrr".replace('rrr',str(0.3*e[2])
+  #   #               ),
+  #   #               ),
+  #   #       )
+  #   print(en - st)
+    # nodes = [e[0], e[1]]
+    # for node in nodes:
+    #   if node not in drawnNodes:
+    #     plt.plot([pos[node][0]], [pos[node][1]], marker='o', color='g', label=node)
+    #     drawnNodes.add(node)
+    if attributeGraph[e] == False:    
+      if isShowPlot():  
+        ax.annotate("",
           xy=pos[e[1]], xycoords='data',
           xytext=pos[e[0]], textcoords='data',
           arrowprops=dict(arrowstyle="->", color="0.1",
@@ -211,9 +278,11 @@ def generate_memory_graph():
                   ),
           )
 
+
   
   printDebug(sorted(allObservedPositions))
-  # plt.show()
+  if isShowPlot():
+    plt.show()
   generatedGraphs += 1
   print("Number of graphs generated: %d"%generatedGraphs)
 
@@ -221,7 +290,7 @@ def generate_memory_graph():
   dependencyCount = 0
   allObservedPositions = set()
   variableToLatestVersion = {}
-  object_id_to_heap_element_map = {}
+  object_id_to_heap_element_map.clear()
   edgeCounter = 0
   edgeMap = {}
 

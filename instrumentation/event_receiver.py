@@ -10,12 +10,16 @@ class EventReceiver(object):
 
   def __enter__(self) -> None:
     assert self.current_exit_func is None
+    self.reset_receiver()
     self.current_exit_func = add_receiver(self)
   
   def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
     assert self.current_exit_func is not None
     self.current_exit_func()
     self.current_exit_func = None
+
+  def reset_receiver(self) -> None:
+    pass
 
 _active_receivers: List[EventReceiver] = []
 

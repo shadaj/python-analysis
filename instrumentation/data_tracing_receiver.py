@@ -4,6 +4,7 @@ from sys import version
 from types import FrameType
 from bytecode import Bytecode
 import inspect
+from time import time
 
 from networkx.algorithms.operators import unary
 
@@ -49,6 +50,24 @@ class DataTracingReceiver(EventReceiver):
   pre_op_stack: List[Union[FunctionCallHandled, Tuple[StackElement, StackElement], Tuple[StackElement, StackElement, StackElement]]]
   frame_stack: List[FrameType]
   pre_instrument_state_for_iter: bool = False
+  timetaken: List[float]
+
+  def reset_receiver(self) -> None:
+    self.function_call_stack = []
+    self.heap_object_tracking = HeapObjectTracker()
+    self.frame_tracking = HeapObjectTracker()
+    self.cell_to_frame = {}
+    self.symbolic_stack = []
+    self.frame_variables = {}
+    self.cell_variables = {}
+    self.free_variables = {}
+    self.closure_cells = {}
+    self.closure_heap_to_symb = {}
+    self.block_stack = {}
+    self.global_variables = {}
+    self.pre_op_stack = []
+    self.frame_stack = []
+    self.timetaken = [0.0 for i in self.timetaken]
 
   def __init__(self) -> None:
     self.function_call_stack = []
@@ -65,11 +84,12 @@ class DataTracingReceiver(EventReceiver):
     self.global_variables = {}
     self.pre_op_stack = []
     self.frame_stack = []
+    self.timetaken = [0.0, 0.0]
     super().__init__()
 
   def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
     super().__exit__(exc_type, exc_val, exc_tb)
-    self.receiverData = generate_memory_graph()
+    self.receiverData = generate_memory_graph(), self.timetaken
 
   def stringify_maybe_object_id(self, maybe_id: Union[int, ObjectId]) -> str:
     if isinstance(maybe_id, ObjectId):
@@ -106,7 +126,11 @@ class DataTracingReceiver(EventReceiver):
       return
     self.already_in_receiver = True
     
+    st = time()
     cur_frame = get_instrumented_program_frame()
+    en = time()
+    self.timetaken[0] += (en - st)
+
     if len(self.frame_stack) == 0 or not self.frame_stack[-1] == cur_frame:
       # first time entering this instrumented frame
       self.frame_stack.append(cur_frame)
@@ -237,7 +261,7 @@ class DataTracingReceiver(EventReceiver):
         #     opcode,
         #     [] # TODO(shadaj): add approximate dependencies
         #   ))
-    elif opname[opcode] == "RETURN_VALUE":
+    if opcode != "JUMP_TARGET" and opname[opcode] == "RETURN_VALUE":
       self.frame_stack.pop()
       # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
       if len(self.frame_stack) > 0:
@@ -246,12 +270,12 @@ class DataTracingReceiver(EventReceiver):
           self.symbolic_stack.pop()
         else:
           self.pre_op_stack[-1].return_on_stack = True
-    else:
+    elif opcode != "JUMP_TARGET" and opname[opcode] != "RETURN_VALUE" and opname[opcode] != "CALL_FUNCTION" and opname[opcode] != "CALL_METHOD" and opname[opcode] != "JUMP_FORWARD" and opname[opcode] != "JUMP_ABSOLUTE":
       object_id_stack = self.convert_stack_to_heap_id(stack)
 
       if not is_post:
         self.check_symbolic_stack(object_id_stack, opcode)
-
+      
       if opname[opcode] == "POP_TOP" or opname[opcode] == "POP_JUMP_IF_FALSE" or opname[opcode] == "POP_JUMP_IF_TRUE":
         if not is_post:
           self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - 1]
@@ -572,13 +596,12 @@ class DataTracingReceiver(EventReceiver):
             add_dependency2(stackEl, cur_inputs[0], cur_inputs[1])
       else:
         raise NotImplementedError(opname[opcode])
-      
       if is_post:
         self.check_symbolic_stack(object_id_stack, opcode)
-
     self.already_in_receiver = False
 
   def check_symbolic_stack(self, object_id_stack: List[Any], opcode: int) -> None:
+    
     printDebug(opname[opcode])
     printDebug("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
     printDebug("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
@@ -598,3 +621,5 @@ class DataTracingReceiver(EventReceiver):
         print("symbolic:", [self.stringify_maybe_object_id(e.heap_elem.object_id) for e in self.symbolic_stack])
         print("concrete:", [self.stringify_maybe_object_id(e.object_id) for e in object_id_stack])
         raise Exception("Stack element at index " + str(i) + " is not in symbolic stack")
+    
+    

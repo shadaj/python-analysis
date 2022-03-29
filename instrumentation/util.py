@@ -22,7 +22,7 @@ class ObjectId(object):
 
 def get_instrumented_program_frame() -> FrameType:
   is_next_frame = False
-  for frame_container in inspect.getouterframes(inspect.currentframe()):
+  for frame_container in inspect.stack():#inspect.getouterframes(inspect.currentframe()):
     if is_next_frame:
       return frame_container.frame
     elif frame_container.function == "py_instrument_receiver":

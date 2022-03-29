@@ -17,7 +17,7 @@ receiver = DataTracingReceiver()
 
 def testMergeSort():
   from demos.mergesort import merge2
-  arr = [random.randint(0,10) for i in range(25)]
+  arr = [random.randint(0,10) for i in range(10)]
   print(arr)
   with receiver:
     arr = merge2(arr)
@@ -77,7 +77,33 @@ def testTrial():
     trial(a)
 
 
-testHeapSort()
+# testMergeSort()
+
+def generateDataset():
+  labels = [-1]
+  import numpy as np
+  from time import time
+  def flatten(lol):
+    return [i for l in lol for i in l]
+  for i in range(1000):
+    st = time()
+    labels.append(0)
+    testMergeSort()
+    en = time()
+    print(en-st)
+    _, times = receiver.receiverData
+    print(times)
+  (allNodeDetails, allEdgeDetails, nodeEdgeCounts), times = receiver.receiverData
+  allNodeDetails = np.asarray(flatten(allNodeDetails))
+  allEdgeDetails = np.asarray(flatten(allEdgeDetails))
+  nodeEdgeCounts = np.concatenate([np.asarray(nodeEdgeCounts), np.expand_dims(np.asarray(labels), axis=1)], axis=1)
+  mode = "dump"
+
+  np.save("/usr/local/lib/python3.9/site-packages/jraph/nodes%s.npy"%mode, allNodeDetails)
+  np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
+  np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
+
+generateDataset()
 
 patcher.uninstall()
 
