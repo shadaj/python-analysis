@@ -124,10 +124,14 @@ def generate_memory_graph():
       parents = [p for p in G.predecessors(node)]
       toRemove.append(node)
       resultantEdgeCounter = 2**64 #There wont be graphs this large
+      parentsToIgnore = []
+      childsToIgnore = []
       for parent in parents:
         edge_data = deepcopy(G.get_edge_data(parent, node))
         for key in list(edge_data.keys()):
           param = int(edge_data[key]['sameVariableEdge'])
+          if param:
+            parentsToIgnore.append(parent)
           G.remove_edge(parent, node)
           resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
           del edgeMap[(parent, node, key)]
@@ -135,14 +139,26 @@ def generate_memory_graph():
         edge_data = deepcopy(G.get_edge_data(node, child))
         for key in list(edge_data.keys()):
           param = int(edge_data[key]['sameVariableEdge'])
+          if param:
+            childsToIgnore.append(child)
           G.remove_edge(node, child)
           resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
           del edgeMap[(node, child, key)]
       for child in childs:
+        if child in childsToIgnore:
+          continue
         for parent in parents:
+          if parent in parentsToIgnore:
+            continue
           param = len(G.get_edge_data(parent, child, default={}))
           G.add_edge(parent, child, sameVariableEdge = False)
           edgeMap[(parent, child, param)] = resultantEdgeCounter
+      for child in childsToIgnore:
+        for parent in parentsToIgnore:
+          param = len(G.get_edge_data(parent, child, default={}))
+          G.add_edge(parent, child, sameVariableEdge = True)
+          edgeMap[(parent, child, param)] = resultantEdgeCounter
+
   
   for node in toRemove:
     G.remove_node(node)

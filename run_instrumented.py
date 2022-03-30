@@ -15,6 +15,22 @@ import random
 
 receiver = DataTracingReceiver()
 
+def testInsertionSort():
+  from demos.insertsort import insertion_sort
+  arr = [random.randint(0,10) for i in range(25)]
+  print(arr)
+  with receiver:
+    insertion_sort(arr)
+  print("InsertionSorted:", arr)
+
+def testSelectionSort():
+  from demos.selectsort import selection_sort
+  arr = [random.randint(0,10) for i in range(20)]
+  print(arr)
+  with receiver:
+    selection_sort(arr)
+  print("SelectSorted:", arr)
+
 def testMergeSort():
   from demos.mergesort import merge2
   arr = [random.randint(0,10) for i in range(10)]
@@ -76,9 +92,6 @@ def testTrial():
   with receiver:
     trial(a)
 
-
-# testMergeSort()
-
 def generateDataset():
   labels = [-1]
   import numpy as np
@@ -103,7 +116,7 @@ def generateDataset():
   np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
 
-generateDataset()
+testInsertionSort()
 
 patcher.uninstall()
 
