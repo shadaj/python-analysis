@@ -12,7 +12,7 @@ patcher = PatchingPathFinder()
 patcher.install()
 
 import random
-
+random.seed(1)
 receiver = DataTracingReceiver()
 
 def testInsertionSort():
@@ -98,10 +98,16 @@ def generateDataset():
   from time import time
   def flatten(lol):
     return [i for l in lol for i in l]
-  for i in range(1000):
+  for i in range(2000):
     st = time()
-    labels.append(0)
-    testMergeSort()
+    choice = random.randint(0,1)
+    labels.append(choice)
+    if choice == 0:
+      testQuickSort()
+    elif choice == 1:
+      testHeapSort()
+    else:
+      assert False, "Unexpected choice"
     en = time()
     print(en-st)
     _, times = receiver.receiverData
@@ -116,7 +122,8 @@ def generateDataset():
   np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
 
-testInsertionSort()
+# testMergeSort()
+generateDataset()
 
 patcher.uninstall()
 

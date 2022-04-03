@@ -14,7 +14,7 @@ from .helper import printDebug, isShowPlot
 
 generatedGraphs = 0
 
-def add_dependency(child: Union[SymbolicElement, StackElement], parent: Union[SymbolicElement, StackElement]) -> None:
+def add_dependency(frameId: int, child: Union[SymbolicElement, StackElement], parent: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
   dependencyCount += 1
   printDebug("DEP COUNT: ", dependencyCount)
@@ -22,9 +22,9 @@ def add_dependency(child: Union[SymbolicElement, StackElement], parent: Union[Sy
   printDebug("Child: ", str(child))
   printDebug("Parent: ", str(parent))
   child.heap_elem = parent.heap_elem
-  add_dependency_internal([(child, parent)])
+  add_dependency_internal(frameId, [(child, parent)])
 
-def add_dependency2(child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement]) -> None:
+def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
   dependencyCount += 1
   printDebug("DEP COUNT: ", dependencyCount)
@@ -32,9 +32,9 @@ def add_dependency2(child: Union[SymbolicElement, StackElement], parent1: Union[
   printDebug("Child: ", str(child))
   printDebug("Parent1: ", str(parent1))
   printDebug("Parent2: ", str(parent2))
-  add_dependency_internal([(child, parent1), (child, parent2)])
+  add_dependency_internal(frameId, [(child, parent1), (child, parent2)])
 
-def add_dependency3(child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], parent3: Union[SymbolicElement, StackElement]) -> None:
+def add_dependency3(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], parent3: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
   dependencyCount += 1
   printDebug("DEP COUNT: ", dependencyCount)
@@ -43,7 +43,7 @@ def add_dependency3(child: Union[SymbolicElement, StackElement], parent1: Union[
   printDebug("Parent1: ", str(parent1))
   printDebug("Parent2: ", str(parent2))
   printDebug("Parent3: ", str(parent3))
-  add_dependency_internal([(child, parent1), (child, parent2), (child, parent3)])
+  add_dependency_internal(frameId, [(child, parent1), (child, parent2), (child, parent3)])
 
 allObservedPositions = set()
 variableToLatestVersion = {}
@@ -57,7 +57,7 @@ nodeEdgeCounts = [(0,0)]
 edgeCounter = 0
 edgeMap = {}
 
-def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]]) -> None:
+def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]]) -> None:
   global allObservedPositions, edgeCounter, edgeMap
   if len(depList) == 2:
     assert depList[0][0] == depList[1][0], "Same child must be present in all dependencies"
@@ -72,7 +72,7 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
   oldChildVersion = variableToLatestVersion.get(child.var_name, None)
   variableToLatestVersion[child.var_name] = child.version
 
-  G.add_node(childStr, pos=(child.var_name, child.version))
+  G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId)
 
   if oldChildVersion is not None:
     oldChildStr = child.var_name + "#" + str(oldChildVersion)
@@ -86,8 +86,8 @@ def add_dependency_internal(depList: List[Tuple[Union[SymbolicElement, StackElem
   for dep in depList:
     parent = dep[1]
     parentStr = parent.var_name + "#" + str(parent.version)
-
-    G.add_node(parentStr, pos=(parent.var_name, parent.version))
+    if parentStr not in G:
+      G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId)
     edgeCounter += 1
     param = len(G.get_edge_data(parentStr, childStr, default={}))
     edgeMap[(parentStr, childStr, param)] = edgeCounter
@@ -112,6 +112,9 @@ def generate_memory_graph():
   toRemove = []
   allNodes = [h for h in G.nodes]
 
+
+  GnodeToFrame = nx.get_node_attributes(G, 'frame')
+
   # Pruning extra nodes. Any node which does not have "nameless" in it's name, i.e. is not a compound data structure (non primitive like int/str) 
   # is treated as a node to exclude. This is a temporary logic and can be changed in the future. #TODO Robust logic 
   from copy import deepcopy
@@ -119,7 +122,7 @@ def generate_memory_graph():
     if node not in G.nodes:
       # Element has already been deleted so we do not need to consider it anymore
       continue
-    if "nameless" not in node:
+    if "nameless" not in node or GnodeToFrame[node] not in [0, 1, 10, 2, 5, 11, 14]:
       childs = [c for c in G.successors(node)]
       parents = [p for p in G.predecessors(node)]
       toRemove.append(node)
@@ -199,9 +202,12 @@ def generate_memory_graph():
   printDebug(pos_raw)
   printDebug(pos)
 
+  GsameVariableEdge = nx.get_edge_attributes(G,'sameVariableEdge')
+  GnodeToFrame = nx.get_node_attributes(G, 'frame')
+
   if isShowPlot():
     nx.draw_networkx_nodes(G, pos)
-    nx.draw_networkx_labels(G, pos, font_size=5)
+    nx.draw_networkx_labels(G, pos, labels={n:GnodeToFrame[n] for n in G}, font_size=5)
   
   if isShowPlot():
     ax = plt.gca()
@@ -237,7 +243,6 @@ def generate_memory_graph():
   # ax.set_xlim([minX-10, maxX+10])
   # ax.set_ylim([minY-1, maxY+1])
 
-  attributeGraph = nx.get_edge_attributes(G,'sameVariableEdge')
 
   for e in sorted(G.edges, key=lambda x: edgeMap[x]):
   #   st = time()
@@ -281,7 +286,7 @@ def generate_memory_graph():
     #   if node not in drawnNodes:
     #     plt.plot([pos[node][0]], [pos[node][1]], marker='o', color='g', label=node)
     #     drawnNodes.add(node)
-    if attributeGraph[e] == False:    
+    if GsameVariableEdge[e] == False:    
       if isShowPlot():  
         ax.annotate("",
           xy=pos[e[1]], xycoords='data',
