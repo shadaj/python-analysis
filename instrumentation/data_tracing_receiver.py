@@ -3,6 +3,7 @@ from dis import opname, opmap
 from sys import version
 from types import FrameType
 from bytecode import Bytecode
+from bytecode.instr import Compare
 import inspect
 from time import time
 
@@ -554,7 +555,7 @@ class DataTracingReceiver(EventReceiver):
           # TODO: Update Unary_ops too if changed
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
-          add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1])
+          add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]])
       elif opname[opcode] in unary_ops:
         if not is_post:
           tos = self.symbolic_stack.pop()
@@ -563,7 +564,8 @@ class DataTracingReceiver(EventReceiver):
           cur_inputs = self.pre_op_stack.pop()
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
-          add_dependency(frameId, stackEl, cur_inputs[0])
+          #TODO: WHAT ABOUT UNARY_POSITIVE
+          add_dependency(frameId, stackEl, cur_inputs[0], unary_ops[opname[opcode]])
       elif opname[opcode] == "MAKE_FUNCTION":
         if not is_post:
           tos = self.symbolic_stack.pop()

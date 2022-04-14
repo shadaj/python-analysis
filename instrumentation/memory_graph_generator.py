@@ -1,3 +1,4 @@
+from statistics import mean
 from typing import Any, Dict, List, Tuple, Union, Optional
 from typing_extensions import Literal
 
@@ -24,7 +25,7 @@ def add_dependency(frameId: int, child: Union[SymbolicElement, StackElement], pa
   child.heap_elem = parent.heap_elem
   add_dependency_internal(frameId, [(child, parent)])
 
-def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement]) -> None:
+def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], operation: str = "") -> None:
   global dependencyCount
   dependencyCount += 1
   printDebug("DEP COUNT: ", dependencyCount)
@@ -32,7 +33,7 @@ def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], p
   printDebug("Child: ", str(child))
   printDebug("Parent1: ", str(parent1))
   printDebug("Parent2: ", str(parent2))
-  add_dependency_internal(frameId, [(child, parent1), (child, parent2)])
+  add_dependency_internal(frameId, [(child, parent1), (child, parent2)], operation)
 
 def add_dependency3(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], parent3: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
@@ -57,7 +58,7 @@ nodeEdgeCounts = [(0,0)]
 edgeCounter = 0
 edgeMap = {}
 
-def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]]) -> None:
+def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]], operation: str = "") -> None:
   global allObservedPositions, edgeCounter, edgeMap
   if len(depList) == 2:
     assert depList[0][0] == depList[1][0], "Same child must be present in all dependencies"
@@ -79,7 +80,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     edgeCounter += 1
     param = len(G.get_edge_data(oldChildStr, childStr, default={}))
     edgeMap[(oldChildStr, childStr, param)] = edgeCounter
-    G.add_edge(oldChildStr, childStr, sameVariableEdge = True)
+    G.add_edge(oldChildStr, childStr, sameVariableEdge = True, op = operation)
 
   allObservedPositions.add(child.var_name)
 
@@ -91,7 +92,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     edgeCounter += 1
     param = len(G.get_edge_data(parentStr, childStr, default={}))
     edgeMap[(parentStr, childStr, param)] = edgeCounter
-    G.add_edge(parentStr, childStr, sameVariableEdge = False)
+    G.add_edge(parentStr, childStr, sameVariableEdge = False, op = operation)
 
     variableToLatestVersion[parent.var_name] = parent.version
 
@@ -122,9 +123,26 @@ def generate_memory_graph():
     if node not in G.nodes:
       # Element has already been deleted so we do not need to consider it anymore
       continue
-    if "nameless" not in node or GnodeToFrame[node] not in [0, 1, 10, 2, 5, 11, 14]:
+    if "nameless" not in node: #or GnodeToFrame[node] not in [0, 1, 10, 2, 5, 11, 14]:
       childs = [c for c in G.successors(node)]
       parents = [p for p in G.predecessors(node)]
+      childOp = []
+      parentOp = []
+      
+      interestingParents = False
+      interestingChildren = False
+      for parent in parents:
+        edge_data = G.get_edge_data(parent, node)
+        for key in edge_data:
+          if edge_data[key]['op'] != "":
+            interestingParents = True
+      for child in childs:
+        edge_data = G.get_edge_data(node, child)
+        for key in edge_data:
+          if edge_data[key]['op'] != "":
+            interestingChildren = True
+      if interestingParents and interestingChildren:
+        continue
       toRemove.append(node)
       resultantEdgeCounter = 2**64 #There wont be graphs this large
       parentsToIgnore = []
@@ -133,48 +151,56 @@ def generate_memory_graph():
         edge_data = deepcopy(G.get_edge_data(parent, node))
         for key in list(edge_data.keys()):
           param = int(edge_data[key]['sameVariableEdge'])
+          op = edge_data[key]['op']
           if param:
             parentsToIgnore.append(parent)
-          G.remove_edge(parent, node)
+          G.remove_edge(parent, node, key)
           resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
           del edgeMap[(parent, node, key)]
+          parentOp.append((parent, op))
       for child in childs:
         edge_data = deepcopy(G.get_edge_data(node, child))
         for key in list(edge_data.keys()):
           param = int(edge_data[key]['sameVariableEdge'])
+          op = edge_data[key]['op']
           if param:
             childsToIgnore.append(child)
-          G.remove_edge(node, child)
+          G.remove_edge(node, child, key)
           resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
           del edgeMap[(node, child, key)]
-      for child in childs:
+          childOp.append((child, op))
+      for (child, op1) in childOp:
         if child in childsToIgnore:
           continue
-        for parent in parents:
+        for (parent, op2) in parentOp:
           if parent in parentsToIgnore:
             continue
+          op = op1 + op2 #Only one of op1, op2 are can be nontrivial (non "")
           param = len(G.get_edge_data(parent, child, default={}))
-          G.add_edge(parent, child, sameVariableEdge = False)
+          G.add_edge(parent, child, sameVariableEdge = False, op = op)
           edgeMap[(parent, child, param)] = resultantEdgeCounter
       for child in childsToIgnore:
         for parent in parentsToIgnore:
           param = len(G.get_edge_data(parent, child, default={}))
-          G.add_edge(parent, child, sameVariableEdge = True)
+          G.add_edge(parent, child, sameVariableEdge = True, op = "") #SameVariableEdge cannot be for nontrivial ops
           edgeMap[(parent, child, param)] = resultantEdgeCounter
 
   
   for node in toRemove:
     G.remove_node(node)
 
+  print(len(G.edges), len(G.nodes))
 
   def getXY(raw: Tuple[str, int]):
     return (positionStrToXcoord[raw[0]], raw[1])
 
+  # Convert Variable names into X-Y coordinates
   pos_raw = nx.get_node_attributes(G,'pos')
   pos = {}
   for key, value in pos_raw.items():
     pos[key] = getXY(value)
 
+  # Reduce the Y-Coordinate to make the graph pretty
   for key, value in sorted(pos.items(), key=lambda item:item[1][1]):
     parentsYCoords = [pos[p][1] for p in G.predecessors(key)]
     if len(parentsYCoords) > 0:
@@ -182,6 +208,23 @@ def generate_memory_graph():
     else:
       newYCoord = 0
     pos[key] = (pos[key][0], newYCoord)
+
+  namelessXcoords = 0
+  for key, _ in sorted(pos.items(), key = lambda item:item[1][1]):
+    if "nameless" in key:
+      namelessXcoords = max(namelessXcoords, pos[key][0])
+
+  for key, value in sorted(pos.items(), key = lambda item:item[1][1]):
+    if "nameless" not in key:
+      parentsXCoords = [pos[p][0] for p in G.predecessors(key)]
+      if len(parentsXCoords) > 0:
+        newXCoord = mean(parentsXCoords)
+      else:
+        newXCoord = namelessXcoords
+        namelessXcoords += 1
+      pos[key] = (newXCoord, pos[key][1])
+
+
 
   nodeNumber = 0
   nodeMap = {}
@@ -204,10 +247,12 @@ def generate_memory_graph():
 
   GsameVariableEdge = nx.get_edge_attributes(G,'sameVariableEdge')
   GnodeToFrame = nx.get_node_attributes(G, 'frame')
+  GopEdge = {(u, v): d['op'] for u, v, d in G.edges(data=True)}
 
   if isShowPlot():
     nx.draw_networkx_nodes(G, pos)
-    nx.draw_networkx_labels(G, pos, labels={n:GnodeToFrame[n] for n in G}, font_size=5)
+    nx.draw_networkx_labels(G, pos, labels={n:GnodeToFrame[n] for n in G}, font_size=10)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=GopEdge, font_size=10)
   
   if isShowPlot():
     ax = plt.gca()
@@ -298,6 +343,13 @@ def generate_memory_graph():
                   ),
                   ),
           )
+        # labelLoc = ((pos[e[0]][0] + pos[e[1]][0]) / 2, (pos[e[0]][1] + pos[e[1]][1]) / 2)
+        # ax.annotate(GopEdge[e], xy = labelLoc, xycoords='data', xytext = labelLoc, textcoords='data', arrowprops=dict(arrowstyle="->", color="0.1",
+        #           shrinkA=10, shrinkB=10,
+        #           patchA=None, patchB=None,
+        #           connectionstyle="arc3,rad=rrr".replace('rrr',str(0.3*e[2])
+        #           ),
+        #           ),)
 
 
   

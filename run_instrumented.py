@@ -41,7 +41,7 @@ def testMergeSort():
 
 def testQuickSort():
   from demos.quicksort import quicksort_return
-  arr = [random.randint(0,10) for i in range(25)]
+  arr = [random.randint(0,10) for i in range(5)]
   print(arr)
   with receiver:
     arr = quicksort_return(arr)
@@ -98,7 +98,7 @@ def generateDataset():
   from time import time
   def flatten(lol):
     return [i for l in lol for i in l]
-  for i in range(2000):
+  for i in range(400):
     st = time()
     choice = random.randint(0,1)
     labels.append(choice)
@@ -116,14 +116,16 @@ def generateDataset():
   allNodeDetails = np.asarray(flatten(allNodeDetails))
   allEdgeDetails = np.asarray(flatten(allEdgeDetails))
   nodeEdgeCounts = np.concatenate([np.asarray(nodeEdgeCounts), np.expand_dims(np.asarray(labels), axis=1)], axis=1)
-  mode = "dump"
+  mode = "test"
 
   np.save("/usr/local/lib/python3.9/site-packages/jraph/nodes%s.npy"%mode, allNodeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
 
 # testMergeSort()
-generateDataset()
+# generateDataset()
+# testQuickSort()
+testMatrixMultiplication()
 
 patcher.uninstall()
 

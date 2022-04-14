@@ -15,45 +15,45 @@ ignore_ops = [
   "HAVE_ARGUMENT",
 ]
 
-binary_ops = [
-  "BINARY_POWER",
-  "BINARY_MULTIPLY",
-  "BINARY_MATRIX_MULTIPLY",
-  "BINARY_FLOOR_DIVIDE",
-  "BINARY_TRUE_DIVIDE",
-  "BINARY_MODULO",
-  "BINARY_ADD",
-  "BINARY_SUBTRACT",
-  "BINARY_SUBSCR",
-  "BINARY_LSHIFT",
-  "BINARY_RSHIFT",
-  "BINARY_AND",
-  "BINARY_XOR",
-  "BINARY_OR",
+binary_ops = {
+  "BINARY_POWER":"**",
+  "BINARY_MULTIPLY":"*",
+  "BINARY_MATRIX_MULTIPLY":"@",
+  "BINARY_FLOOR_DIVIDE":"//",
+  "BINARY_TRUE_DIVIDE":"/",
+  "BINARY_MODULO":"%",
+  "BINARY_ADD":"+",
+  "BINARY_SUBTRACT":"-",
+  "BINARY_SUBSCR":"[]",
+  "BINARY_LSHIFT":"<<",
+  "BINARY_RSHIFT":">>",
+  "BINARY_AND":"&",
+  "BINARY_XOR":"^",
+  "BINARY_OR":"|",
 
-  "COMPARE_OP",
+  "COMPARE_OP":"?",
 
-  "INPLACE_POWER",
-  "INPLACE_MULTIPLY",
-  "INPLACE_MATRIX_MULTIPLY",
-  "INPLACE_FLOOR_DIVIDE",
-  "INPLACE_TRUE_DIVIDE",
-  "INPLACE_MODULO",
-  "INPLACE_ADD",
-  "INPLACE_SUBTRACT",
-  "INPLACE_LSHIFT",
-  "INPLACE_RSHIFT",
-  "INPLACE_AND",
-  "INPLACE_XOR",
-  "INPLACE_OR",
-]
+  "INPLACE_POWER":"**",
+  "INPLACE_MULTIPLY":"*",
+  "INPLACE_MATRIX_MULTIPLY":"@",
+  "INPLACE_FLOOR_DIVIDE":"//",
+  "INPLACE_TRUE_DIVIDE":"/",
+  "INPLACE_MODULO":"%",
+  "INPLACE_ADD":"+",
+  "INPLACE_SUBTRACT":"-",
+  "INPLACE_LSHIFT":"<<",
+  "INPLACE_RSHIFT":">>",
+  "INPLACE_AND":"&",
+  "INPLACE_XOR":"^",
+  "INPLACE_OR":"|",
+}
 
-unary_ops = [
-  "UNARY_POSITIVE",
-  "UNARY_NEGATIVE",
-  "UNARY_NOT",
-  "UNARY_INVERT"
-]
+unary_ops = {
+  "UNARY_POSITIVE":"",
+  "UNARY_NEGATIVE":"-",
+  "UNARY_NOT":"not",
+  "UNARY_INVERT":"~"
+}
 
 # Opcodes to instrument before they run
 pre_opcode_instrument: Dict[str, Union[int, Callable[[Instr], int]]] = {
