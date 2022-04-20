@@ -23,6 +23,23 @@ from .memory_graph_generator import *
 
 from .helper import printDebug
 
+def negCompare(arg):
+  negList = {
+    Compare.EQ: Compare.NE,
+    Compare.GE: Compare.LT,
+    Compare.GT: Compare.LE,
+    Compare.IN: Compare.NOT_IN,
+    Compare.IS: Compare.IS_NOT
+  }
+  negListRev = {a: b for b, a in negList.items()}
+  if arg in negList:
+    return negList[arg]
+  elif arg in negListRev:
+    return negListRev[arg]
+  else:
+    raise NotImplementedError("Unknown Compare Op")
+  
+
 class FunctionCallHandled(object):
   return_on_stack: bool
   arg_mapping: Dict[str, StackElement]
@@ -555,7 +572,12 @@ class DataTracingReceiver(EventReceiver):
           # TODO: Update Unary_ops too if changed
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
-          add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]])
+          if opname[opcode] == "COMPARE_OP":
+            add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]], arg if stackEl.heap_elem.object_id else negCompare(arg))
+          else:
+            add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]])
+          #   add_relation(stackEl.heap_elem.object_id, cur_inputs[1], cur_inputs[0], str(arg))
+          
       elif opname[opcode] in unary_ops:
         if not is_post:
           tos = self.symbolic_stack.pop()

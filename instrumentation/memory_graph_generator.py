@@ -2,6 +2,8 @@ from statistics import mean
 from typing import Any, Dict, List, Tuple, Union, Optional
 from typing_extensions import Literal
 
+from bytecode import Compare
+
 from .heap_object_tracking import HeapObjectTracker
 
 from .data_tracing_variables import *
@@ -10,6 +12,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 import copy
+from collections import deque
 
 from .helper import printDebug, isShowPlot
 
@@ -25,7 +28,16 @@ def add_dependency(frameId: int, child: Union[SymbolicElement, StackElement], pa
   child.heap_elem = parent.heap_elem
   add_dependency_internal(frameId, [(child, parent)])
 
-def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], operation: str = "") -> None:
+# def add_relation(value: bool, dest: Union[SymbolicElement, StackElement], orig: Union[SymbolicElement, StackElement], op: str) -> None:
+#   global dependencyCount
+#   dependencyCount += 1
+#   printDebug("DEP COUNT: ", dependencyCount)
+#   printDebug("New Relation (Dependency): ")
+#   printDebug("Dest: ", str(dest))
+#   printDebug("Origin: ", str(orig))
+#   add_relation_internal(value, (dest, orig), op)
+
+def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], operation: Optional[str] = None, establishedFact: Optional[Compare] = None) -> None:
   global dependencyCount
   dependencyCount += 1
   printDebug("DEP COUNT: ", dependencyCount)
@@ -33,7 +45,7 @@ def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], p
   printDebug("Child: ", str(child))
   printDebug("Parent1: ", str(parent1))
   printDebug("Parent2: ", str(parent2))
-  add_dependency_internal(frameId, [(child, parent1), (child, parent2)], operation)
+  add_dependency_internal(frameId, [(child, parent1), (child, parent2)], operation, establishedFact)
 
 def add_dependency3(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], parent3: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
@@ -58,7 +70,23 @@ nodeEdgeCounts = [(0,0)]
 edgeCounter = 0
 edgeMap = {}
 
-def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]], operation: str = "") -> None:
+# def add_relation_internal(value: bool, depList: Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]], operation: str = "") -> None:
+#   global edgeCounter, edgeMap
+#   # No versioning checks required as no new nodes will be added. Only one edge between two eisting nodes will be added
+#   edgeCounter += 1
+
+#   child = depList[0]
+#   childStr = child.var_name + "#" + str(child.version)
+
+#   parent = depList[1]
+#   parentStr = parent.var_name + "#" + str(parent.version)
+
+#   param = len(G.get_edge_data(parentStr, childStr, default={}))
+#   edgeMap[(parentStr, childStr, param)] = edgeCounter
+#   label = ("true:" if value else "false:") + operation
+#   G.add_edge(parentStr, childStr, sameVariableEdge = False, op = label)
+
+def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]], operation: Optional[str] = None, establishedFact: Optional[Compare] = None) -> None:
   global allObservedPositions, edgeCounter, edgeMap
   if len(depList) == 2:
     assert depList[0][0] == depList[1][0], "Same child must be present in all dependencies"
@@ -73,14 +101,14 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
   oldChildVersion = variableToLatestVersion.get(child.var_name, None)
   variableToLatestVersion[child.var_name] = child.version
 
-  G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId)
+  G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact)
 
   if oldChildVersion is not None:
     oldChildStr = child.var_name + "#" + str(oldChildVersion)
     edgeCounter += 1
     param = len(G.get_edge_data(oldChildStr, childStr, default={}))
     edgeMap[(oldChildStr, childStr, param)] = edgeCounter
-    G.add_edge(oldChildStr, childStr, sameVariableEdge = True, op = operation)
+    G.add_edge(oldChildStr, childStr, sameVariableEdge = True)
 
   allObservedPositions.add(child.var_name)
 
@@ -88,11 +116,11 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     parent = dep[1]
     parentStr = parent.var_name + "#" + str(parent.version)
     if parentStr not in G:
-      G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId)
+      G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId, op = None, fact = None)
     edgeCounter += 1
     param = len(G.get_edge_data(parentStr, childStr, default={}))
     edgeMap[(parentStr, childStr, param)] = edgeCounter
-    G.add_edge(parentStr, childStr, sameVariableEdge = False, op = operation)
+    G.add_edge(parentStr, childStr, sameVariableEdge = False)
 
     variableToLatestVersion[parent.var_name] = parent.version
 
@@ -110,84 +138,108 @@ def generate_memory_graph():
   if isShowPlot():
     plt.subplot(121)
 
-  toRemove = []
   allNodes = [h for h in G.nodes]
 
 
+  relevantNodes = []
+  for node in allNodes:
+    if "nameless" in node and len([c for c in G.successors(node)]) == 0:
+      relevantNodes.append(node)
+
+  visitedQueue = deque(relevantNodes)
+  relevantNodes = set()
+
+  while len(visitedQueue) > 0:
+    element = visitedQueue.popleft()
+    relevantNodes.add(element)
+    nbrs = [p for p in G.predecessors(element)] + [c for c in G.successors(element)]
+    for nbr in nbrs:
+      if nbr not in relevantNodes:
+        visitedQueue.append(nbr)
+
   GnodeToFrame = nx.get_node_attributes(G, 'frame')
+  GnodeToOp = nx.get_node_attributes(G, 'op')
+  GnodeToFact = nx.get_node_attributes(G, 'fact')
 
   # Pruning extra nodes. Any node which does not have "nameless" in it's name, i.e. is not a compound data structure (non primitive like int/str) 
   # is treated as a node to exclude. This is a temporary logic and can be changed in the future. #TODO Robust logic 
   from copy import deepcopy
-  for node in allNodes:
-    if node not in G.nodes:
-      # Element has already been deleted so we do not need to consider it anymore
-      continue
-    if "nameless" not in node: #or GnodeToFrame[node] not in [0, 1, 10, 2, 5, 11, 14]:
-      childs = [c for c in G.successors(node)]
-      parents = [p for p in G.predecessors(node)]
-      childOp = []
-      parentOp = []
-      
-      interestingParents = False
-      interestingChildren = False
-      for parent in parents:
-        edge_data = G.get_edge_data(parent, node)
-        for key in edge_data:
-          if edge_data[key]['op'] != "":
-            interestingParents = True
-      for child in childs:
-        edge_data = G.get_edge_data(node, child)
-        for key in edge_data:
-          if edge_data[key]['op'] != "":
-            interestingChildren = True
-      if interestingParents and interestingChildren:
-        continue
-      toRemove.append(node)
-      resultantEdgeCounter = 2**64 #There wont be graphs this large
-      parentsToIgnore = []
-      childsToIgnore = []
-      for parent in parents:
-        edge_data = deepcopy(G.get_edge_data(parent, node))
-        for key in list(edge_data.keys()):
-          param = int(edge_data[key]['sameVariableEdge'])
-          op = edge_data[key]['op']
-          if param:
-            parentsToIgnore.append(parent)
-          G.remove_edge(parent, node, key)
-          resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
-          del edgeMap[(parent, node, key)]
-          parentOp.append((parent, op))
-      for child in childs:
-        edge_data = deepcopy(G.get_edge_data(node, child))
-        for key in list(edge_data.keys()):
-          param = int(edge_data[key]['sameVariableEdge'])
-          op = edge_data[key]['op']
-          if param:
-            childsToIgnore.append(child)
-          G.remove_edge(node, child, key)
-          resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
-          del edgeMap[(node, child, key)]
-          childOp.append((child, op))
-      for (child, op1) in childOp:
-        if child in childsToIgnore:
-          continue
-        for (parent, op2) in parentOp:
-          if parent in parentsToIgnore:
-            continue
-          op = op1 + op2 #Only one of op1, op2 are can be nontrivial (non "")
-          param = len(G.get_edge_data(parent, child, default={}))
-          G.add_edge(parent, child, sameVariableEdge = False, op = op)
-          edgeMap[(parent, child, param)] = resultantEdgeCounter
-      for child in childsToIgnore:
-        for parent in parentsToIgnore:
-          param = len(G.get_edge_data(parent, child, default={}))
-          G.add_edge(parent, child, sameVariableEdge = True, op = "") #SameVariableEdge cannot be for nontrivial ops
-          edgeMap[(parent, child, param)] = resultantEdgeCounter
 
   
-  for node in toRemove:
-    G.remove_node(node)
+  def cleanGraph(stage):
+    global edgeCounter
+    toRemove = []
+    for node in allNodes:
+      if node not in G.nodes:
+        # Element has already been deleted so we do not need to consider it anymore
+        continue
+      if "nameless" not in node: #or GnodeToFrame[node] not in [0, 1, 10, 2, 5, 11, 14]:
+        childs = [c for c in G.successors(node)]
+        parents = [p for p in G.predecessors(node)]
+        # childOp = []
+        # parentOp = []
+        
+        if stage == 1:
+          if GnodeToOp[node] is not None and node in relevantNodes:
+            continue
+        elif stage == 2:
+          if GnodeToOp[node] != "?" or len(childs) > 0: # We remove a ? node where there are no children
+            continue
+          else:
+            if len(parents) == 2:
+              param = len(G.get_edge_data(parents[0],  parents[1], default={}))
+              G.add_edge(parents[0], parents[1], fact = GnodeToFact[node], sameVariableEdge = False)
+              edgeCounter += 1
+              edgeMap[(parents[0], parents[1], param)] = edgeCounter
+        else:
+          raise NotImplementedError("Graph cleaning stage %d undefined" % stage)
+
+        toRemove.append(node)
+        resultantEdgeCounter = 2**64 #There wont be graphs this large
+        parentsToIgnore = []
+        childsToIgnore = []
+        for parent in parents:
+          edge_data = deepcopy(G.get_edge_data(parent, node))
+          for key in list(edge_data.keys()):
+            param = int(edge_data[key]['sameVariableEdge'])
+            # op = edge_data[key]['op']
+            if param:
+              parentsToIgnore.append(parent)
+            G.remove_edge(parent, node, key)
+            resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
+            del edgeMap[(parent, node, key)]
+            # parentOp.append((parent, op))
+        for child in childs:
+          edge_data = deepcopy(G.get_edge_data(node, child))
+          for key in list(edge_data.keys()):
+            param = int(edge_data[key]['sameVariableEdge'])
+            # op = edge_data[key]['op']
+            if param:
+              childsToIgnore.append(child)
+            G.remove_edge(node, child, key)
+            resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
+            del edgeMap[(node, child, key)]
+            # childOp.append((child, op))
+        for child in childs: #childOp:
+          if child in childsToIgnore:
+            continue
+          for parent in parents:#parentOp:
+            if parent in parentsToIgnore:
+              continue
+            # op = op1 + op2 #Only one of op1, op2 are can be nontrivial (non "")
+            param = len(G.get_edge_data(parent, child, default={}))
+            G.add_edge(parent, child, sameVariableEdge = False)
+            edgeMap[(parent, child, param)] = resultantEdgeCounter
+        for child in childsToIgnore:
+          for parent in parentsToIgnore:
+            param = len(G.get_edge_data(parent, child, default={}))
+            G.add_edge(parent, child, sameVariableEdge = True) 
+            edgeMap[(parent, child, param)] = resultantEdgeCounter
+    for node in toRemove:
+      G.remove_node(node)
+
+  
+  cleanGraph(1)
 
   print(len(G.edges), len(G.nodes))
 
@@ -224,7 +276,7 @@ def generate_memory_graph():
         namelessXcoords += 1
       pos[key] = (newXCoord, pos[key][1])
 
-
+  cleanGraph(2)
 
   nodeNumber = 0
   nodeMap = {}
@@ -246,14 +298,19 @@ def generate_memory_graph():
   printDebug(pos)
 
   GsameVariableEdge = nx.get_edge_attributes(G,'sameVariableEdge')
+  GfactEdge = {(u, v): d.get('fact',"") for u, v, d in G.edges(data=True)}
+  GfactContainingEdges = nx.get_edge_attributes(G, 'fact')
   GnodeToFrame = nx.get_node_attributes(G, 'frame')
-  GopEdge = {(u, v): d['op'] for u, v, d in G.edges(data=True)}
+  # GopEdge = {(u, v): d['op'] for u, v, d in G.edges(data=True)}
 
   if isShowPlot():
     nx.draw_networkx_nodes(G, pos)
-    nx.draw_networkx_labels(G, pos, labels={n:GnodeToFrame[n] for n in G}, font_size=10)
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=GopEdge, font_size=10)
-  
+    nx.draw_networkx_labels(G, pos, labels={n: \
+      str(GnodeToFrame[n]) + ":" + str(GnodeToOp[n] if GnodeToOp[n] is not None else "") \
+         for n in G}, font_size=10)
+    # nx.draw_networkx_edge_labels(G, pos, edge_labels=GopEdge, font_size=10, bbox=dict(alpha=0))
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=GfactEdge, font_size=10, bbox=dict(alpha=0))
+
   if isShowPlot():
     ax = plt.gca()
     plt.axis('off')
@@ -336,7 +393,7 @@ def generate_memory_graph():
         ax.annotate("",
           xy=pos[e[1]], xycoords='data',
           xytext=pos[e[0]], textcoords='data',
-          arrowprops=dict(arrowstyle="->", color="0.1",
+          arrowprops=dict(arrowstyle="->", color="0.1" if e not in GfactContainingEdges else "0.7",
                   shrinkA=10, shrinkB=10,
                   patchA=None, patchB=None,
                   connectionstyle="arc3,rad=rrr".replace('rrr',str(0.3*e[2])

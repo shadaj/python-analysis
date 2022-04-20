@@ -33,7 +33,7 @@ def testSelectionSort():
 
 def testMergeSort():
   from demos.mergesort import merge2
-  arr = [random.randint(0,10) for i in range(10)]
+  arr = [random.randint(0,10) for i in range(32)]
   print(arr)
   with receiver:
     arr = merge2(arr)
@@ -41,7 +41,7 @@ def testMergeSort():
 
 def testQuickSort():
   from demos.quicksort import quicksort_return
-  arr = [random.randint(0,10) for i in range(5)]
+  arr = [random.randint(0,10) for i in range(25)]
   print(arr)
   with receiver:
     arr = quicksort_return(arr)
@@ -124,7 +124,7 @@ def generateDataset():
 
 # testMergeSort()
 # generateDataset()
-# testQuickSort()
+# testSelectionSort()
 testMatrixMultiplication()
 
 patcher.uninstall()
