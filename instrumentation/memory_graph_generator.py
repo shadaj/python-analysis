@@ -143,7 +143,7 @@ def generate_memory_graph():
 
   relevantNodes = []
   for node in allNodes:
-    if "nameless" in node and len([c for c in G.successors(node)]) == 0:
+    if "nameless" in node: #and len([c for c in G.successors(node)]) == 0:
       relevantNodes.append(node)
 
   visitedQueue = deque(relevantNodes)

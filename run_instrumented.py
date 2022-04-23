@@ -52,7 +52,7 @@ def testBubbleSort():
   arr = [random.randint(0,10) for i in range(25)]
   print(arr)
   with receiver:
-    arr = bubble_for(arr)
+    bubble_for(arr)
   print("BubbleSorted:", arr)
 
 def testHeapSort():
@@ -64,7 +64,7 @@ def testHeapSort():
   print("HeapSorted:", arr)
 
 def testMatrixMultiplication():
-  from demos.matmul import matmul_for, matmul_recursive, matmul_strassen
+  from demos.matmul import matmul_for, matmul_recursive, matmul_strassen, matmul2_for
   I = 4
   J = 4
   K = 4
@@ -75,6 +75,7 @@ def testMatrixMultiplication():
   with receiver:
     c = matmul_strassen(a, b)
     # matmul_for(a, b, c)
+    # matmul2_for(a, b, c)
     # c = matmul_recursive(a, b)
   print("Multiplication: ", a, b, c)
 
@@ -122,10 +123,10 @@ def generateDataset():
   np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
 
-# testMergeSort()
+# testMatrixMultiplication()
 # generateDataset()
-# testSelectionSort()
-testMatrixMultiplication()
+testBubbleSort()
+# testMatrixMultiplication()
 
 patcher.uninstall()
 
