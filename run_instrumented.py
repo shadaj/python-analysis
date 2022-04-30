@@ -15,49 +15,64 @@ import random
 random.seed(1)
 receiver = DataTracingReceiver()
 
+lower = 10
+upper = 30
+
 def testInsertionSort():
+  global lower, upper
   from demos.insertsort import insertion_sort
-  arr = [random.randint(0,10) for i in range(25)]
+  l = random.randint(lower, upper)
+  arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
     insertion_sort(arr)
   print("InsertionSorted:", arr)
 
 def testSelectionSort():
+  global lower, upper
   from demos.selectsort import selection_sort
-  arr = [random.randint(0,10) for i in range(20)]
+  l = random.randint(lower, upper)
+  arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
     selection_sort(arr)
   print("SelectSorted:", arr)
 
 def testMergeSort():
+  global lower, upper
   from demos.mergesort import merge2
-  arr = [random.randint(0,10) for i in range(32)]
+  l = random.randint(lower, upper)
+  arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
     arr = merge2(arr)
   print("MergeSorted:", arr)
 
 def testQuickSort():
+  global lower, upper
   from demos.quicksort import quicksort_return
-  arr = [random.randint(0,10) for i in range(25)]
+  l = random.randint(lower, upper)
+  arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
     arr = quicksort_return(arr)
   print("QuickSorted:", arr)
 
 def testBubbleSort():
+  global lower, upper
   from demos.bubblesort import bubble, bubble_for
-  arr = [random.randint(0,10) for i in range(25)]
+  l = random.randint(lower, upper)
+  arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
     bubble_for(arr)
   print("BubbleSorted:", arr)
 
 def testHeapSort():
+  global lower, upper
   from demos.heapsort import heapsort
-  arr = [random.randint(0,10) for i in range(25)]
+  l = random.randint(lower, upper)
+  arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
     heapsort(arr)
@@ -65,9 +80,9 @@ def testHeapSort():
 
 def testMatrixMultiplication():
   from demos.matmul import matmul_for, matmul_recursive, matmul_strassen, matmul2_for
-  I = 4
-  J = 4
-  K = 4
+  I = 2
+  J = 2
+  K = 2
   a = [[random.randint(0, 10) for i in range(J)] for j in range(I)]
   b = [[random.randint(0, 10) for i in range(K)] for j in range(J)]
   c = [[0 for i in range(K)] for j in range(I)]
@@ -93,20 +108,28 @@ def testTrial():
   with receiver:
     trial(a)
 
-def generateDataset():
+def generateDataset(mode, num_datapoints):
   labels = [-1]
   import numpy as np
   from time import time
   def flatten(lol):
     return [i for l in lol for i in l]
-  for i in range(400):
+  for i in range(num_datapoints):
     st = time()
-    choice = random.randint(0,1)
+    choice = random.randint(0,5)
     labels.append(choice)
     if choice == 0:
       testQuickSort()
     elif choice == 1:
       testHeapSort()
+    elif choice == 2:
+      testBubbleSort()
+    elif choice == 3:
+      testMergeSort()
+    elif choice == 4:
+      testInsertionSort()
+    elif choice == 5:
+      testSelectionSort()
     else:
       assert False, "Unexpected choice"
     en = time()
@@ -117,15 +140,16 @@ def generateDataset():
   allNodeDetails = np.asarray(flatten(allNodeDetails))
   allEdgeDetails = np.asarray(flatten(allEdgeDetails))
   nodeEdgeCounts = np.concatenate([np.asarray(nodeEdgeCounts), np.expand_dims(np.asarray(labels), axis=1)], axis=1)
-  mode = "test"
 
   np.save("/usr/local/lib/python3.9/site-packages/jraph/nodes%s.npy"%mode, allNodeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
 
 # testMatrixMultiplication()
-# generateDataset()
-testBubbleSort()
+lower = 10
+upper = 30
+generateDataset("train", 100)
+# testMergeSort()
 # testMatrixMultiplication()
 
 patcher.uninstall()

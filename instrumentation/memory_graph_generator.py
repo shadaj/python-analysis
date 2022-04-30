@@ -8,6 +8,8 @@ from .heap_object_tracking import HeapObjectTracker
 
 from .data_tracing_variables import *
 
+from .instrument import binary_ops, unary_ops
+
 import networkx as nx
 import matplotlib.pyplot as plt
 
@@ -164,6 +166,7 @@ def generate_memory_graph():
   # Pruning extra nodes. Any node which does not have "nameless" in it's name, i.e. is not a compound data structure (non primitive like int/str) 
   # is treated as a node to exclude. This is a temporary logic and can be changed in the future. #TODO Robust logic 
   from copy import deepcopy
+  import numpy as np
 
   
   def cleanGraph(stage):
@@ -278,16 +281,36 @@ def generate_memory_graph():
 
   cleanGraph(2)
 
+  ops = {}
+  for i, k in binary_ops.items():
+    ops[i] = k
+  for i, k in unary_ops.items():
+    ops[i] = k
+
+  opToId = {}
+  for i, (k, v) in enumerate(ops.items()):
+    opToId[v] = i + 1
+  opToId[None] = 0
+
+  GsameVariableEdge = nx.get_edge_attributes(G,'sameVariableEdge')
+  GfactEdge = {(u, v, k): d.get('fact',"") for u, v, k, d in G.edges(data=True, keys=True)}
+  GfactContainingEdges = nx.get_edge_attributes(G, 'fact')
+  GnodeToFrame = nx.get_node_attributes(G, 'frame')
+  # GopEdge = {(u, v): d['op'] for u, v, d in G.edges(data=True)}
+
   nodeNumber = 0
   nodeMap = {}
   nodeDetails = []
   edgeDetails = []
+  low = min([k[0] for i, k in pos.items()])
+  high = max([k[0] for i, k in pos.items()])
   for i, k in pos.items():
     nodeMap[i] = nodeNumber
     nodeNumber += 1
-    nodeDetails.append([nodeNumber, -1, k[0]])
+    nodeDetails.append([nodeNumber, -1, np.sin((k[0] - low) / (high - low)), opToId[GnodeToOp[i]]])
   for e in G.edges:
-    edgeDetails.append([nodeMap[e[0]], nodeMap[e[1]], -1, 1.0])
+    val = int(GfactEdge[e])+1 if isinstance(GfactEdge[e], Compare) else 0
+    edgeDetails.append([nodeMap[e[0]], nodeMap[e[1]], -1, val])
 
   allNodeDetails.append(nodeDetails)
   allEdgeDetails.append(edgeDetails)
@@ -297,13 +320,9 @@ def generate_memory_graph():
   printDebug(pos_raw)
   printDebug(pos)
 
-  GsameVariableEdge = nx.get_edge_attributes(G,'sameVariableEdge')
-  GfactEdge = {(u, v): d.get('fact',"") for u, v, d in G.edges(data=True)}
-  GfactContainingEdges = nx.get_edge_attributes(G, 'fact')
-  GnodeToFrame = nx.get_node_attributes(G, 'frame')
-  # GopEdge = {(u, v): d['op'] for u, v, d in G.edges(data=True)}
 
   if isShowPlot():
+    GfactEdge = {(u, v): d.get('fact',"") for u, v, d in G.edges(data=True)}
     nx.draw_networkx_nodes(G, pos)
     nx.draw_networkx_labels(G, pos, labels={n: \
       str(GnodeToFrame[n]) + ":" + str(GnodeToOp[n] if GnodeToOp[n] is not None else "") \
