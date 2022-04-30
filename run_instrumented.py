@@ -146,9 +146,22 @@ def generateDataset(mode, num_datapoints):
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
 
 # testMatrixMultiplication()
+random.seed(1)
 lower = 10
 upper = 30
-generateDataset("train", 100)
+generateDataset("train", 10000)
+random.seed(5196)
+lower = 10
+upper = 30
+generateDataset("test", 3000)
+random.seed(61295)
+lower = 30
+upper = 50
+generateDataset("testL", 3000)
+random.seed(282)
+lower = 50
+upper = 100
+generateDataset("testLL", 3000)
 # testMergeSort()
 # testMatrixMultiplication()
 
