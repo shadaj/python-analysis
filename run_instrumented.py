@@ -109,6 +109,7 @@ def testTrial():
     trial(a)
 
 def generateDataset(mode, num_datapoints):
+  global receiver
   labels = [-1]
   import numpy as np
   from time import time
@@ -144,24 +145,25 @@ def generateDataset(mode, num_datapoints):
   np.save("/usr/local/lib/python3.9/site-packages/jraph/nodes%s.npy"%mode, allNodeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
+  receiver.clear_cumulative_data()
 
 # testMatrixMultiplication()
 random.seed(1)
 lower = 10
 upper = 30
-generateDataset("train", 10000)
+generateDataset("train", 10)
 random.seed(5196)
 lower = 10
 upper = 30
-generateDataset("test", 3000)
+generateDataset("test", 3)
 random.seed(61295)
 lower = 30
 upper = 50
-generateDataset("testL", 3000)
+generateDataset("testL", 3)
 random.seed(282)
 lower = 50
 upper = 100
-generateDataset("testLL", 3000)
+generateDataset("testLL", 3)
 # testMergeSort()
 # testMatrixMultiplication()
 

@@ -109,6 +109,9 @@ class DataTracingReceiver(EventReceiver):
     super().__exit__(exc_type, exc_val, exc_tb)
     self.receiverData = generate_memory_graph(), self.timetaken
 
+  def clear_cumulative_data(self) -> None:
+    clear_cumulative_graph_data()
+
   def stringify_maybe_object_id(self, maybe_id: Union[int, ObjectId]) -> str:
     if isinstance(maybe_id, ObjectId):
       return "obj #" + str(maybe_id.id) + " (" + str(self.heap_object_tracking.get_by_id(maybe_id.id)) + ")"

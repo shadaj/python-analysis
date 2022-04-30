@@ -444,3 +444,10 @@ def generate_memory_graph():
   edgeMap = {}
 
   return allNodeDetails, allEdgeDetails, nodeEdgeCounts
+
+def clear_cumulative_graph_data() -> None:
+  global allNodeDetails, allEdgeDetails, nodeEdgeCounts, generatedGraphs
+  allNodeDetails = []
+  allEdgeDetails = []
+  nodeEdgeCounts = [(0,0)]
+  generatedGraphs = 0
