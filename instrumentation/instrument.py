@@ -89,6 +89,7 @@ post_opcode_instrument = {
   "BUILD_SLICE": 1,
   "BUILD_TUPLE": 1,
   "LOAD_METHOD": 2, # capture method and self parameter
+  "LOAD_ATTR": 1,
   "GET_ITER": 1, 
 }
 
@@ -285,6 +286,7 @@ def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
       if op.name in ignore_ops:
         print(f"IGNORING OPERATION {op.name}")
       else:
+        #if not op.name == "CALL_FUNCTION_EX" and not op.name == "IMPORT_FROM" and not op.name == "CALL_FUNCTION_KW" and not op.name == "RAISE_VARARGS":
         raise Exception(f"Unhandled Operation for Instrumentation: {op.name}")
 
     instrumented.append(op)

@@ -431,6 +431,7 @@ def generate_memory_graph():
   
   printDebug(sorted(allObservedPositions))
   if isShowPlot():
+    plt.pause(1)
     plt.show()
   generatedGraphs += 1
   print("Number of graphs generated: %d"%generatedGraphs)

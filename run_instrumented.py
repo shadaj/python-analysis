@@ -108,6 +108,17 @@ def testTrial():
   with receiver:
     trial(a)
 
+def testReductionSum():
+  import sys
+  import numpy as np
+  import os
+  sys.path.append(os.getcwd())
+  from jax_numpy_api.sum import sum_1 as sum
+  a = np.random.uniform(low=10., high=10., size=(2, 2, 3))
+  with receiver:
+    ans = sum(a)
+  print("reduction: ", ans)
+
 def generateDataset(mode, num_datapoints):
   global receiver
   labels = [-1]
@@ -148,23 +159,27 @@ def generateDataset(mode, num_datapoints):
   receiver.clear_cumulative_data()
 
 # testMatrixMultiplication()
-random.seed(1)
-lower = 10
-upper = 30
-generateDataset("train", 10)
-random.seed(5196)
-lower = 10
-upper = 30
-generateDataset("test", 3)
-random.seed(61295)
-lower = 30
-upper = 50
-generateDataset("testL", 3)
-random.seed(282)
-lower = 50
-upper = 100
-generateDataset("testLL", 3)
-# testMergeSort()
+#random.seed(1)
+#lower = 10
+#upper = 30
+#generateDataset("train", 10000)
+#random.seed(5196)
+#lower = 10
+#upper = 30
+#generateDataset("test", 3000)
+#random.seed(61295)
+#lower = 30
+#upper = 50
+#generateDataset("testL", 3000)
+#random.seed(282)
+#lower = 50
+#upper = 100
+#generateDataset("testLL", 500)
+# random.seed(1906)
+# lower = 200
+# upper = 500
+# generateDataset("testLLLL", 500)
+testReductionSum()
 # testMatrixMultiplication()
 
 patcher.uninstall()

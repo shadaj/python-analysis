@@ -366,6 +366,14 @@ class DataTracingReceiver(EventReceiver):
         methodStackElement = StackElement(methodHeapId)
         self.symbolic_stack.append(methodStackElement)
         self.symbolic_stack.append(selfStackElement)
+        #TODO: Dependency between dereferenced and parent obj?
+      elif opname[opcode] == "LOAD_ATTR":
+        assert is_post
+        selfStackElement = self.symbolic_stack.pop()
+        loadedAttrHeapId = object_id_stack[-1]
+        attrStackElement = StackElement(loadedAttrHeapId)
+        self.symbolic_stack.append(attrStackElement)
+        #TODO: Dependency between dereferenced and parent obj?
       elif opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
         assert is_post
         assert isinstance(self.frame_variables[cur_frame][arg], SymbolicElement), "Type mismatch"
