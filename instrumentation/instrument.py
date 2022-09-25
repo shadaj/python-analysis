@@ -97,6 +97,8 @@ pre_and_post_opcode_instrument: Dict[str, Tuple[Union[int, Callable[[Instr], int
   "FOR_ITER": (1,1),
   # "LOAD_ATTR": (1,1),
   "CALL_METHOD": (lambda op: cast(int, op.arg) + 2, 1), # capture all args as well as the function as well as self, then capture return value
+  "CALL_FUNCTION_EX": (2, 1), # We only implement the case of variadic positional arguments only. Arguments bundled into one list
+  "CALL_FUNCTION_KW": (lambda op: cast(int, op.arg) + 2, 1), # capture all args as well as the function as well as keys, then capture return value
   "CALL_FUNCTION": (lambda op: cast(int, op.arg) + 1, 1), # capture all args as well as the function, then capture return value
   "MAKE_FUNCTION": (lambda op: 2 if cast(int, op.arg) == 0 else 3, 1),
 }

@@ -33,14 +33,14 @@ class HeapElement(object):
       self.object_id = ObjectId(heap_object_tracker.get_object_id(concrete))
       if isinstance(concrete, (list, tuple)):
         self.collection_heap_elems = []
-        self.collection_counter = -1
+        self.collection_counter = 0
         if namePrefix == "": #Top level variable, need a global count for them
             namePrefix = "hpo%05d|"%self.object_id.id 
         self.collection_prefix = namePrefix + "\'\'nameless%05d"
         for i, e in enumerate(concrete):
                    
             nameStr = namePrefix + "\'\'nameless%05d"%i
-            self.collection_counter = i
+            self.collection_counter += 1
             self.collection_heap_elems.append(SymbolicElement(nameStr, getHeapElement(e, heap_object_tracker, nameStr + "|")))
       elif isinstance(concrete, slice):
         self.collection_heap_elems = []

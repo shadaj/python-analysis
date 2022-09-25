@@ -12,7 +12,7 @@ patcher = PatchingPathFinder()
 patcher.install()
 
 import random
-random.seed(1)
+# random.seed(1)
 receiver = DataTracingReceiver()
 
 lower = 10
@@ -80,9 +80,9 @@ def testHeapSort():
 
 def testMatrixMultiplication():
   from demos.matmul import matmul_for, matmul_recursive, matmul_strassen, matmul2_for
-  I = 2
-  J = 2
-  K = 2
+  I = 4
+  J = 4
+  K = 4
   a = [[random.randint(0, 10) for i in range(J)] for j in range(I)]
   b = [[random.randint(0, 10) for i in range(K)] for j in range(J)]
   c = [[0 for i in range(K)] for j in range(I)]
@@ -179,8 +179,10 @@ def generateDataset(mode, num_datapoints):
 # lower = 200
 # upper = 500
 # generateDataset("testLLLL", 500)
-testReductionSum()
+# testReductionSum()
 # testMatrixMultiplication()
+
+testMatrixMultiplication()
 
 patcher.uninstall()
 

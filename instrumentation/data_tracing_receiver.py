@@ -42,7 +42,7 @@ def negCompare(arg):
 
 class FunctionCallHandled(object):
   return_on_stack: bool
-  arg_mapping: Dict[str, StackElement]
+  arg_mapping: Dict[str, Union[StackElement, List[StackElement]]]
   closure_mapping: Dict[str, SymbolicElement]
 
   def __init__(self, arg_mapping: Dict[str, StackElement], closure_mapping: Dict[str, SymbolicElement]) -> None:
@@ -58,7 +58,7 @@ class DataTracingReceiver(EventReceiver):
   cell_to_frame: Dict[Union[int, str, ObjectId], int]
   already_in_receiver: bool = False
   symbolic_stack: List[StackElement]
-  frame_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
+  frame_variables: Dict[Union[FrameType, int], Dict[str, Union[SymbolicElement, List[StackElement]]]]
   cell_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
   free_variables: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
   closure_cells: Dict[Union[FrameType, int], Dict[str, SymbolicElement]]
@@ -181,11 +181,15 @@ class DataTracingReceiver(EventReceiver):
           assert isinstance(self.pre_op_stack[-1].closure_mapping[free_var], SymbolicElement), "Expected symbolic element to handle closures"
 
         for name, value in self.pre_op_stack[-1].arg_mapping.items():
-          assert isinstance(value, StackElement), "Expected StackElement Instance"
-          self.frame_variables[cur_frame][name] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,name), value)
-          #self.frame_variables[cur_frame][name] = StackElementVersion(StackElementFactory.getStackElement(value.fetch().concrete, opcode))
-          add_dependency(frameId, self.frame_variables[cur_frame][name], value)
-          #add_dependency_not_on_stack(self.frame_variables[cur_frame][name], value)
+          if isinstance(value, StackElement):
+            self.frame_variables[cur_frame][name] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,name), value)
+            #self.frame_variables[cur_frame][name] = StackElementVersion(StackElementFactory.getStackElement(value.fetch().concrete, opcode))
+            add_dependency(frameId, self.frame_variables[cur_frame][name], value)
+            #add_dependency_not_on_stack(self.frame_variables[cur_frame][name], value)
+          else:
+            # We currently set the frame variable to the raw value, when we encounter a LOAD_* instruction
+            # we will have access to the list object and can lazily set the required metadata
+            self.frame_variables[cur_frame][name] = value
 
        
         # handle default arguments
@@ -213,9 +217,29 @@ class DataTracingReceiver(EventReceiver):
       pass
     elif opname[opcode] == "JUMP_FORWARD" or opname[opcode] == "JUMP_ABSOLUTE":
       pass
-    elif opname[opcode] == "CALL_FUNCTION" or opname[opcode] == "CALL_METHOD":
+    elif opname[opcode] == "CALL_FUNCTION" or opname[opcode] == "CALL_FUNCTION_KW" or opname[opcode] == "CALL_METHOD" or opname[opcode] == "CALL_FUNCTION_EX":
       if not is_post:
         symbolic_stack_args = self.symbolic_stack[len(self.symbolic_stack) - len(stack) + 1:]
+        
+        if opname[opcode] == "CALL_FUNCTION_KW":
+          keys = stack[-1]
+          symbolic_stack_args.pop()
+        else:
+          keys = ()
+
+        if opname[opcode] == "CALL_FUNCTION_EX":
+          assert not(arg & 1), "Keyword arguments not supported for functions with variadic arguments"
+          arguments_iterable = symbolic_stack_args.pop()
+
+          for symbVal in arguments_iterable.heap_elem.collection_heap_elems:
+            # The iterable is unpacked by the interpreter. We model the same behavior by unpacking
+            # the iterable StackElements into StackElements of individual items, and push it directly
+            # onto symbolic_stack_args instead of self.symbolic_stack as they get popped anyway when 
+            # the function is called.
+            stackElem = StackElement(symbVal)         
+            symbolic_stack_args.append(stackElem)   
+            add_dependency(frameId, stackElem, symbVal)
+
         self.symbolic_stack = self.symbolic_stack[:len(self.symbolic_stack) - len(stack)]
 
         function_args_id_stack = self.convert_stack_to_heap_id(stack)
@@ -224,13 +248,31 @@ class DataTracingReceiver(EventReceiver):
         function_object = self.heap_object_tracking.get_by_id(function_args_id_stack[0].object_id.id)
 
         if hasattr(function_object, "__code__"):
-          code_object = function_object.__code__
-          positional_arg_names = list(code_object.co_varnames)[:code_object.co_argcount]
-          # TODO(shadaj): handle non-positional calls
-          for i, arg in enumerate(positional_arg_names):
-            if i < len(symbolic_stack_args):
-              args_mapping[arg] = symbolic_stack_args[i]
+          all_argument_names = list(inspect.signature(function_object).parameters.values())
+          # Handling keyword arguments
+          for i, key in enumerate(keys[::-1]):
+            args_mapping[key] = symbolic_stack_args[len(symbolic_stack_args) - i - 1]
+          # Handling positional arguments
+          args_to_handle = len(symbolic_stack_args) - len(keys)
+          
+          arg: Optional[inspect.Parameter] = None
+          for i in range(args_to_handle):
+            # Compute next argument to be assigned
+            if arg is None:
+              arg = all_argument_names[i]
+            if arg.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD or arg.kind == inspect.Parameter.POSITIONAL_ONLY:
+              arg = all_argument_names[i]
 
+            # Fill values for current argument
+            if arg.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD or arg.kind == inspect.Parameter.POSITIONAL_ONLY:
+              args_mapping[arg.name] = symbolic_stack_args[i]
+            else:
+              assert arg.kind == inspect.Parameter.VAR_POSITIONAL, "Variadic keyword arguments not supported, Keyword only arguments not expected here"
+              if arg.name not in args_mapping:
+                args_mapping[arg.name] = [symbolic_stack_args[i]]
+              else:
+                args_mapping[arg.name].append(symbolic_stack_args[i])
+            
         if hasattr(function_args_id_stack[0], "metadata"):
           closure_dict = function_args_id_stack[0].metadata
         else:
@@ -282,7 +324,7 @@ class DataTracingReceiver(EventReceiver):
         #     opcode,
         #     [] # TODO(shadaj): add approximate dependencies
         #   ))
-    if opcode != "JUMP_TARGET" and opname[opcode] == "RETURN_VALUE":
+    elif opname[opcode] == "RETURN_VALUE":
       self.frame_stack.pop()
       # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
       if len(self.frame_stack) > 0:
@@ -291,7 +333,7 @@ class DataTracingReceiver(EventReceiver):
           self.symbolic_stack.pop()
         else:
           self.pre_op_stack[-1].return_on_stack = True
-    elif opcode != "JUMP_TARGET" and opname[opcode] != "RETURN_VALUE" and opname[opcode] != "CALL_FUNCTION" and opname[opcode] != "CALL_METHOD" and opname[opcode] != "JUMP_FORWARD" and opname[opcode] != "JUMP_ABSOLUTE":
+    else:
       object_id_stack = self.convert_stack_to_heap_id(stack)
 
       if not is_post:
@@ -376,11 +418,25 @@ class DataTracingReceiver(EventReceiver):
         #TODO: Dependency between dereferenced and parent obj?
       elif opname[opcode] == "LOAD_NAME" or opname[opcode] == "LOAD_FAST":
         assert is_post
-        assert isinstance(self.frame_variables[cur_frame][arg], SymbolicElement), "Type mismatch"
-        stackVal = StackElement(self.frame_variables[cur_frame][arg])
-        self.symbolic_stack.append(stackVal)
-        add_dependency(frameId, stackVal, self.frame_variables[cur_frame][arg])
-        assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
+        if isinstance(self.frame_variables[cur_frame][arg], SymbolicElement):
+          stackVal = StackElement(self.frame_variables[cur_frame][arg])
+          self.symbolic_stack.append(stackVal)
+          add_dependency(frameId, stackVal, self.frame_variables[cur_frame][arg])
+          assert object_id_stack[0] == stackVal.heap_elem, "This variable got modified at an unknown position"
+        else:
+          # Lazy creation of SymbolicElement, StackElement for Variadic function arguments
+          raw_val = self.frame_variables[cur_frame][arg]
+          assert isinstance(raw_val, list)
+          assert object_id_stack[0].collection_counter == len(raw_val)
+          for i in range(len(raw_val)):
+            assert object_id_stack[0].collection_heap_elems[i].heap_elem == raw_val[i].heap_elem, "This variable got modified at an unknown position"
+
+          self.frame_variables[cur_frame][arg] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,arg), object_id_stack[0])
+          for i in range(len(raw_val)):
+            add_dependency_nonupdating(frameId, self.frame_variables[cur_frame][arg], raw_val[i])
+          stackVal = StackElement(self.frame_variables[cur_frame][arg])
+          self.symbolic_stack.append(stackVal)
+          add_dependency(frameId, stackVal, self.frame_variables[cur_frame][arg])
       elif opname[opcode] == "LOAD_DEREF":
         assert is_post
         if "cell" in arg:

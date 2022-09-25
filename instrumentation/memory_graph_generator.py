@@ -20,6 +20,15 @@ from .helper import printDebug, isShowPlot
 
 generatedGraphs = 0
 
+def add_dependency_nonupdating(frameId: int, child: Union[SymbolicElement, StackElement], parent: Union[SymbolicElement, StackElement]) -> None:
+  global dependencyCount
+  dependencyCount += 1
+  printDebug("DEP COUNT: ", dependencyCount)
+  printDebug("New dependency: ")
+  printDebug("Child: ", str(child))
+  printDebug("Parent: ", str(parent))
+  add_dependency_internal(frameId, [(child, parent)])
+
 def add_dependency(frameId: int, child: Union[SymbolicElement, StackElement], parent: Union[SymbolicElement, StackElement]) -> None:
   global dependencyCount
   dependencyCount += 1
