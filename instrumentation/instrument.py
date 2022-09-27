@@ -2,6 +2,8 @@ from types import CodeType, LambdaType
 
 from bytecode import Bytecode, CellVar, FreeVar, Instr, Label, UNSET
 
+from instrumentation.helper import printDebug
+
 from .util import clone_bytecode_empty_body
 
 from typing import Any, Callable, Dict, Optional, Union, cast, Tuple
@@ -11,8 +13,10 @@ from typing_extensions import Literal
 
 ignore_ops = [
   "IMPORT_NAME",
+  "IMPORT_FROM",
   "NOP",
   "HAVE_ARGUMENT",
+  "RAISE_VARARGS", # If an exception is thrown, we terminate our analysis for now. TODO: work on partially created graph if uncaught.
 ]
 
 binary_ops = {
@@ -88,7 +92,7 @@ post_opcode_instrument = {
   "BUILD_LIST": 1,
   "BUILD_SLICE": 1,
   "BUILD_TUPLE": 1,
-  "LOAD_METHOD": 2, # capture method and self parameter
+  "LOAD_METHOD": 1, # capture method and self parameter
   "LOAD_ATTR": 1,
   "GET_ITER": 1, 
 }
@@ -275,7 +279,7 @@ def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
   for i in range(len(code)):
     op = code[i]
 
-    print(op)
+    printDebug(op)
 
     if isinstance(op, Instr) and op.name in pre_opcode_instrument:
       emit_instrument(

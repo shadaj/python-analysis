@@ -20,6 +20,7 @@ class PatchingLoader(Loader):
     self.name = name
     self.existing_loader = existing_loader
     self.finder = finder
+    print("ModuleLoader instantiated")
 
     # extra attributes that are dynamically checked for by module import system
     if hasattr(existing_loader, "get_filename"):
@@ -28,21 +29,27 @@ class PatchingLoader(Loader):
       setattr(self, "is_package", lambda fullname: existing_loader.is_package(fullname)) # type: ignore
 
   def create_module(self, spec: ModuleSpec) -> Optional[ModuleType]:
+    print("Creating module caleld")
     return self.existing_loader.create_module(spec)
 
   def load_module(self, fullname: str) -> ModuleType:
+    print("Loading module %s"%fullname)
     return self.existing_loader.load_module(fullname)
 
   def module_repr(self, module: ModuleType) -> str:
-    return self.existing_loader.module_repr(module)
+    if hasattr(self.existing_loader, "module_repr"):
+      return self.existing_loader.module_repr(module)
+    else:
+      return "unavailable"
 
   def exec_module(self, module: ModuleType) -> None:
+    print("Exec Module Called")
     if hasattr(self.existing_loader, "get_code"):
       module_code = self.existing_loader.get_code(self.name) # type: ignore
       if module_code:
         print("[Python Analysis] Instrumenting module " + self.name)
-        id_to_bytecode, code_to_id = extract_all_codeobjects(module_code)
-        id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id)
+        id_to_name, id_to_bytecode, code_to_id = extract_all_codeobjects(module_code)
+        id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id, id_to_name)
 
         instrumented = id_to_bytecode_new_codeobjects[code_to_id[module_code]]
 
@@ -66,6 +73,7 @@ class PatchingPathFinder(MetaPathFinder):
   patched_modules: List[str]
 
   def __init__(self) -> None:
+    print("MetaPathFinder instantiated")
     self.existing_importers = sys.meta_path.copy()
     self.patched_modules = []
 
@@ -79,6 +87,7 @@ class PatchingPathFinder(MetaPathFinder):
     self.patched_modules = []
 
   def find_spec(self, fullname: str, path: Optional[Sequence[_Path]], target: Optional[ModuleType] = None) -> Optional[ModuleSpec]:
+    print("called find spec for %s"%fullname)
     for importer in self.existing_importers:
       if hasattr(importer, "find_spec"):
         existing_spec = importer.find_spec(fullname, path, target)

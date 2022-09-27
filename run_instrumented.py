@@ -113,10 +113,11 @@ def testReductionSum():
   import numpy as np
   import os
   sys.path.append(os.getcwd())
-  from jax_numpy_api.sum import sum_1 as sum
-  a = np.random.uniform(low=10., high=10., size=(2, 2, 3))
+  sys.path.append('/Users/aayan/Desktop/Research/python-analysis/APIs')
+  import APIs.sum as sum
+  a = np.random.uniform(low=10., high=10., size=(2, 2, 3)).tolist()
   with receiver:
-    ans = sum(a)
+    ans = sum.sum_1(a)
   print("reduction: ", ans)
 
 def generateDataset(mode, num_datapoints):
@@ -182,7 +183,7 @@ def generateDataset(mode, num_datapoints):
 # testReductionSum()
 # testMatrixMultiplication()
 
-testMatrixMultiplication()
+testReductionSum()
 
 patcher.uninstall()
 

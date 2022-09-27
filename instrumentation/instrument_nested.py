@@ -6,12 +6,13 @@ from .util import clone_bytecode_empty_body, is_const_load_function
 
 from typing import Any, Dict, List, Tuple
 
-def extract_all_codeobjects(codeobject: CodeType) -> Tuple[Dict[int, Bytecode], Dict[CodeType, int]]:
+def extract_all_codeobjects(codeobject: CodeType) -> Tuple[Dict[int, str], Dict[int, Bytecode], Dict[CodeType, int]]:
   seen_objects: List[Any] = []
   next_code_id = 0
 
   code_id_to_bytecode = {}
   code_object_to_id = {}
+  code_id_to_name = {}
 
   def explore(obj: CodeType) -> None:
     nonlocal next_code_id
@@ -23,13 +24,14 @@ def extract_all_codeobjects(codeobject: CodeType) -> Tuple[Dict[int, Bytecode], 
       next_code_id += 1
 
       code_id_to_bytecode[current_id] = Bytecode.from_code(obj)
+      code_id_to_name[current_id] = obj.co_name
       code_object_to_id[obj] = current_id
       for elem in code_id_to_bytecode[current_id]:
         if is_const_load_function(elem):
           explore(elem.arg)
 
   explore(codeobject)
-  return code_id_to_bytecode, code_object_to_id
+  return code_id_to_name, code_id_to_bytecode, code_object_to_id
 
 def compile_and_swap(id_to_instrumented_bytecode: Dict[int, Bytecode], code_to_id: Dict[CodeType, int]) -> Dict[int, Bytecode]:
   seen_objects = []
@@ -63,10 +65,14 @@ def compile_and_swap(id_to_instrumented_bytecode: Dict[int, Bytecode], code_to_i
 
   return code_id_to_swapped
 
-def instrument_extracted(id_to_bytecode: Dict[int, Bytecode], code_to_id: Dict[CodeType, int]) -> Dict[int, Bytecode]:
+def instrument_extracted(id_to_bytecode: Dict[int, Bytecode], code_to_id: Dict[CodeType, int], id_to_name: Dict[int, str]) -> Dict[int, Bytecode]:
   id_to_instrumented_bytecode = {}
   for code_id in id_to_bytecode.keys():
-    id_to_instrumented_bytecode[code_id] = instrument_bytecode(id_to_bytecode[code_id], code_id)
+    if "test" in id_to_name[code_id]:
+      # Do not instrument code objects written as tests
+      id_to_instrumented_bytecode[code_id] = id_to_bytecode[code_id]
+    else:
+      id_to_instrumented_bytecode[code_id] = instrument_bytecode(id_to_bytecode[code_id], code_id)
 
   return compile_and_swap(id_to_instrumented_bytecode, code_to_id)
 
