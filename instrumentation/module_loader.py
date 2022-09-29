@@ -4,7 +4,7 @@ from importlib.machinery import ModuleSpec
 from types import ModuleType
 
 from .instrument_nested import extract_all_codeobjects, instrument_extracted
-from .event_receiver import call_all_receivers
+from .event_receiver import call_all_receivers, call_all_stack_observers
 
 from typing import Any, List, Optional, Sequence, Union
 from typing_extensions import Literal
@@ -56,8 +56,12 @@ class PatchingLoader(Loader):
         def py_instrument_receiver(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool) -> None:
           call_all_receivers(stack, opcode, arg, opindex, code_id, is_post, id_to_bytecode)
 
+        def dynamic_instrumentation_guide(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], is_post: bool) -> bool:
+          return call_all_stack_observers(stack, opcode, is_post)
+
         # TODO(shadaj): use an immutable overlay instead
         module.__dict__["py_instrument_receiver"] = py_instrument_receiver
+        module.__dict__["dynamic_instrumentation_guide"] = dynamic_instrumentation_guide
         exec(instrumented.to_code(), module.__dict__)
         self.finder.patched_modules.append(module.__name__)
       else:

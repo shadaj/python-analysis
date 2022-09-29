@@ -8,6 +8,9 @@ class EventReceiver(object):
   def on_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
     pass
 
+  def on_stack_observe_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], is_post: bool) -> bool:
+    pass
+
   def __enter__(self) -> None:
     assert self.current_exit_func is None
     self.reset_receiver()
@@ -26,6 +29,12 @@ _active_receivers: List[EventReceiver] = []
 def add_receiver(receiver: EventReceiver) -> Callable[[], None]:
   _active_receivers.insert(0, receiver)
   return lambda: _active_receivers.remove(receiver)
+
+def call_all_stack_observers(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], is_post: bool) -> None:
+  assert len(_active_receivers) == 1, "Currently only one receiver with a stack observer supported."
+  receiver = _active_receivers[0]
+  return receiver.on_stack_observe_event(stack, opcode, is_post)
+
 
 def call_all_receivers(stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], arg: Any, opindex: int, code_id: int, is_post: bool, id_to_orig_bytecode: Dict[int, Bytecode]) -> None:
   for receiver in _active_receivers:

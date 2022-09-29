@@ -14,7 +14,7 @@ from .heap_object_tracking import HeapObjectTracker
 from .instrument import binary_ops, unary_ops
 from .util import ObjectId, get_instrumented_program_frame
 
-from typing import Any, Dict, List, Tuple, Union, Optional
+from typing import Any, Dict, List, Set, Tuple, Union, Optional
 from typing_extensions import Literal
 
 from .data_tracing_variables import *
@@ -69,6 +69,7 @@ class DataTracingReceiver(EventReceiver):
   frame_stack: List[FrameType]
   pre_instrument_state_for_iter: bool = False
   timetaken: List[float]
+  set_methods: Set[HeapElement]
 
   def reset_receiver(self) -> None:
     self.function_call_stack = []
@@ -86,6 +87,7 @@ class DataTracingReceiver(EventReceiver):
     self.pre_op_stack = []
     self.frame_stack = []
     self.timetaken = [0.0 for i in self.timetaken]
+    self.set_methods = set()
 
   def __init__(self) -> None:
     self.function_call_stack = []
@@ -103,6 +105,7 @@ class DataTracingReceiver(EventReceiver):
     self.pre_op_stack = []
     self.frame_stack = []
     self.timetaken = [0.0, 0.0]
+    self.set_methods = set()
     super().__init__()
 
   def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -138,6 +141,31 @@ class DataTracingReceiver(EventReceiver):
       var_index = free_vars.index(arg["free"])
       cell = fn_object.__closure__[var_index]
       return self.cell_to_frame[self.heap_object_tracking.get_object_id(cell)]
+
+  ##########################
+  # DYNAMIC STACK OBSERVER #
+  ##########################
+  def on_stack_observe_event(self, stack: List[Any], opcode: Union[Literal["JUMP_TARGET"], int], is_post: bool) -> bool:
+    object_id_stack = self.convert_stack_to_heap_id(stack)
+
+    if opname[opcode] == "LOAD_METHOD":
+      assert is_post
+      callable_or_self_heapelem = object_id_stack[0]
+      self_symbolic = self.symbolic_stack[-1]   # Stack Observer called Before Main Event Handler. 
+      # In LOAD_METHOD's case, the symbolic stack only has SELF on TOS, before Main Event Handler fires.
+      if self_symbolic.heap_elem == callable_or_self_heapelem: # Case where topmost element of stack is self,
+        # which means this LOAD_METHOD indeed results in a function call.
+        self.set_methods.add(callable_or_self_heapelem)
+        return True
+      else:
+        return False
+    if opname[opcode] == "CALL_METHOD":
+      assert not is_post
+      callable_or_self = object_id_stack[0]
+      return callable_or_self in self.set_methods
+    else:
+      raise NotImplementedError("Opcode %s does not have Stack Observer Implemented"%opname[opcode])
+
 
   ######################
   # MAIN EVENT HANDLER #
@@ -402,13 +430,20 @@ class DataTracingReceiver(EventReceiver):
         add_dependency(frameId, stackVal, self.global_variables[arg])
       elif opname[opcode] == "LOAD_METHOD":
         assert is_post
-        methodHeapId = object_id_stack[-2]
-        selfStackElement = self.symbolic_stack.pop()
-        assert isinstance(methodHeapId, HeapElement), "Type mismatch"
-        methodStackElement = StackElement(methodHeapId)
-        self.symbolic_stack.append(methodStackElement)
-        self.symbolic_stack.append(selfStackElement)
-        #TODO: Dependency between dereferenced and parent obj?
+        if len(stack) == 1:   # Not an object method, Stack looks like nullptr | callable. 
+          # We do not model the bottom most element as Python crashes when trying to incorporate C's nullptr
+          methodHeapId = object_id_stack[-1]
+          selfStackElement = self.symbolic_stack.pop()
+          methodStackElement = StackElement(methodHeapId)
+          self.symbolic_stack.append(methodStackElement)
+        else:                 # Object method, Stack looks like callable | self
+          methodHeapId = object_id_stack[-2]
+          selfStackElement = self.symbolic_stack.pop()
+          assert isinstance(methodHeapId, HeapElement), "Type mismatch"
+          methodStackElement = StackElement(methodHeapId)
+          self.symbolic_stack.append(methodStackElement)
+          self.symbolic_stack.append(selfStackElement)
+          #TODO: Dependency between dereferenced and parent obj?
       elif opname[opcode] == "LOAD_ATTR":
         assert is_post
         selfStackElement = self.symbolic_stack.pop()

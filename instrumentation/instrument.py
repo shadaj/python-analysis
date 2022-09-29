@@ -92,15 +92,16 @@ post_opcode_instrument = {
   "BUILD_LIST": 1,
   "BUILD_SLICE": 1,
   "BUILD_TUPLE": 1,
-  "LOAD_METHOD": 1, # capture method and self parameter
+  "LOAD_METHOD": {False: 1, True: 2}, # capture method and self parameter
   "LOAD_ATTR": 1,
   "GET_ITER": 1, 
 }
 
-pre_and_post_opcode_instrument: Dict[str, Tuple[Union[int, Callable[[Instr], int]], Union[int, Callable[[Instr], int]]]] = {
+pre_and_post_opcode_instrument: Dict[str, Tuple[Union[int, Callable[[Instr], int], Dict[bool, Any]], Union[int, Callable[[Instr], int], Dict[bool, Any]]]] = {
   "FOR_ITER": (1,1),
   # "LOAD_ATTR": (1,1),
-  "CALL_METHOD": (lambda op: cast(int, op.arg) + 2, 1), # capture all args as well as the function as well as self, then capture return value
+  "CALL_METHOD": ({False: lambda op: cast(int, op.arg) + 1, True: lambda op: cast(int, op.arg) + 2}, 1), 
+  # capture all args as well as the function as well as self, then capture return value
   "CALL_FUNCTION_EX": (2, 1), # We only implement the case of variadic positional arguments only. Arguments bundled into one list
   "CALL_FUNCTION_KW": (lambda op: cast(int, op.arg) + 2, 1), # capture all args as well as the function as well as keys, then capture return value
   "CALL_FUNCTION": (lambda op: cast(int, op.arg) + 1, 1), # capture all args as well as the function, then capture return value
@@ -118,6 +119,106 @@ for op in unary_ops:
 for op in pre_and_post_opcode_instrument:
   pre_opcode_instrument[op], post_opcode_instrument[op] = pre_and_post_opcode_instrument[op]
 
+def emit_guarded_instrument(
+  instrumented: Bytecode,
+  op: Instr, i: int, guarded_stacksize: int, stacksize: Dict[bool, int],
+  label_to_op_index: Dict[Label, int],
+  code_id: int, is_post: bool,
+  opcode: Optional[Union[int, Literal["JUMP_TARGET"]]] = None,
+  arg: Any = None
+) -> None:
+  assert guarded_stacksize > 0, "No elements being inspected dynamically, guarded instrumentation should not be needed."
+  
+  def emit_unpack_args():
+    instrumented.append(Instr(
+      name = "LOAD_GLOBAL",
+      arg = "reversed",
+      lineno = op.lineno
+    ))
+
+    instrumented.append(Instr(
+      name = "ROT_TWO",
+      lineno = op.lineno
+    ))
+
+    instrumented.append(Instr(
+      name = "CALL_FUNCTION",
+      arg = 1,
+      lineno = op.lineno
+    ))
+
+    instrumented.append(Instr(
+      name = "UNPACK_SEQUENCE",
+      arg = guarded_stacksize,
+      lineno = op.lineno
+    ))
+
+  label_cond_to_else = Label()
+  label_then_to_outside = Label()
+
+  instrumented.append(Instr(
+    name = "BUILD_LIST",
+    arg = guarded_stacksize,
+    lineno=op.lineno
+  ))
+
+  instrumented.append(Instr(
+    name="DUP_TOP",
+    lineno = op.lineno
+  ))
+
+  instrumented.append(Instr(
+    name = "LOAD_GLOBAL",
+    arg = "dynamic_instrumentation_guide",
+    lineno = op.lineno
+  ))
+
+  instrumented.append(Instr(
+    name = "ROT_TWO"
+  ))
+
+  instrumented.append(Instr(
+    name = "LOAD_CONST",
+    arg = opcode if opcode else op.opcode,
+    lineno = op.lineno
+  ))
+
+  instrumented.append(Instr(
+    name = "LOAD_CONST",
+    arg = is_post,
+    lineno = op.lineno
+  ))
+
+  instrumented.append(Instr(
+    name = "CALL_FUNCTION",
+    arg = 3,
+    lineno = op.lineno
+  ))
+
+  instrumented.append(Instr(
+    name = "POP_JUMP_IF_TRUE",
+    arg = label_cond_to_else,
+    lineno = op.lineno
+  ))
+
+  emit_unpack_args()
+
+  emit_instrument(instrumented, op, i, stacksize[False], label_to_op_index, code_id, is_post, opcode, arg)
+
+  instrumented.append(Instr(
+    name = "JUMP_ABSOLUTE",
+    arg = label_then_to_outside,
+    lineno = op.lineno
+  ))
+
+  instrumented.append(label_cond_to_else)
+
+  emit_unpack_args()
+
+  emit_instrument(instrumented, op, i, stacksize[True], label_to_op_index, code_id, is_post, opcode, arg)
+
+  instrumented.append(label_then_to_outside)
+  
 def emit_instrument(
   instrumented: Bytecode,
   op: Instr, i: int, stacksize: int,
@@ -262,9 +363,14 @@ def emit_instrument(
       lineno = op.lineno
     ))
 
-def run_or_return_value(maybe_lambda: Union[int, Callable[[Instr], int]], input: Instr) -> int:
+def run_or_return_value(maybe_lambda: Union[int, Callable[[Instr], int]], input: Instr) -> Union[int, Dict[bool, int]]:
   if callable(maybe_lambda):
     return maybe_lambda(input)
+  elif isinstance(maybe_lambda, dict):
+    concretized = {}
+    for key, value in maybe_lambda.items():
+      concretized[key] = run_or_return_value(value, input)
+    return concretized
   else:
     return maybe_lambda
 
@@ -282,11 +388,24 @@ def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
     printDebug(op)
 
     if isinstance(op, Instr) and op.name in pre_opcode_instrument:
-      emit_instrument(
-        instrumented, op, i,
-        run_or_return_value(pre_opcode_instrument[op.name], op),
-        label_to_op_index, code_id, False
-      )
+      if isinstance(pre_opcode_instrument[op.name], dict):
+        concretized = run_or_return_value(pre_opcode_instrument[op.name], op)
+        emit_guarded_instrument(
+          instrumented, op, i, 
+          min(concretized.values()), concretized,
+          label_to_op_index, code_id, False
+        )
+        # emit_instrument(
+        #   instrumented, op, i,
+        #   run_or_return_value(pre_opcode_instrument[op.name][False], op),
+        #   label_to_op_index, code_id, False
+        # )
+      else:
+        emit_instrument(
+          instrumented, op, i,
+          run_or_return_value(pre_opcode_instrument[op.name], op),
+          label_to_op_index, code_id, False
+        )
     
     if isinstance(op, Instr) and op.name not in pre_opcode_instrument and op.name not in post_opcode_instrument:
       if op.name in ignore_ops:
@@ -304,11 +423,24 @@ def instrument_bytecode(code: Bytecode, code_id: int = 0) -> Bytecode:
       )
 
     if isinstance(op, Instr) and op.name in post_opcode_instrument:
-      emit_instrument(
-        instrumented, op, i,
-        run_or_return_value(post_opcode_instrument[op.name], op),
-        label_to_op_index, code_id, True
-      )
+      if isinstance(post_opcode_instrument[op.name], dict):
+        concretized = run_or_return_value(post_opcode_instrument[op.name], op)
+        emit_guarded_instrument(
+          instrumented, op, i, 
+          min(concretized.values()), concretized,
+          label_to_op_index, code_id, True
+        )
+        # emit_instrument(
+        #   instrumented, op, i,
+        #   run_or_return_value(post_opcode_instrument[op.name][False], op),
+        #   label_to_op_index, code_id, True
+        # )
+      else:
+        emit_instrument(
+          instrumented, op, i,
+          run_or_return_value(post_opcode_instrument[op.name], op),
+          label_to_op_index, code_id, True
+        )
   
   return instrumented
 
