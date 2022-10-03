@@ -115,10 +115,35 @@ def testReductionSum():
   sys.path.append(os.getcwd())
   sys.path.append('/Users/aayan/Desktop/Research/python-analysis/APIs')
   import APIs.sum as sum
-  a = np.random.uniform(low=10., high=10., size=(2, 2, 3)).tolist()
+  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
   with receiver:
-    ans = sum.sum_1(a)
+    ans = sum.sum_1(a, axis=1)
   print("reduction: ", ans)
+
+def testAdd():
+  import sys
+  import numpy as np
+  import os
+  sys.path.append(os.getcwd())
+  sys.path.append('/Users/aayan/Desktop/Research/python-analysis/APIs')
+  import APIs.add as add
+  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
+  b = np.random.uniform(low=-10., high=10., size=(2, 1)).tolist()
+  with receiver:
+    ans = add.add_1(a, b)
+  print("addition: ", ans)
+
+def testTranspose():
+  import sys
+  import numpy as np
+  import os
+  sys.path.append(os.getcwd())
+  sys.path.append('/Users/aayan/Desktop/Research/python-analysis/APIs')
+  import APIs.transpose as transpose
+  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
+  with receiver:
+    ans = transpose.transpose_1(a)
+  print("transpose: ", ans)
 
 def generateDataset(mode, num_datapoints):
   global receiver
@@ -183,7 +208,7 @@ def generateDataset(mode, num_datapoints):
 # testReductionSum()
 # testMatrixMultiplication()
 
-testReductionSum()
+testTranspose()
 
 patcher.uninstall()
 

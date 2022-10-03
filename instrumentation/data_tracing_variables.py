@@ -48,11 +48,16 @@ class HeapElement(object):
         self.collection_heap_elems.append(SymbolicElement("slice%05d_stop"%self.object_id.id , getHeapElement(concrete.stop, heap_object_tracker, "slice%05d_stop|"%self.object_id.id )))
         self.collection_heap_elems.append(SymbolicElement("slice%05d_step"%self.object_id.id , getHeapElement(concrete.step, heap_object_tracker, "slice%05d_step|"%self.object_id.id )))
       elif isinstance(concrete, CellType):
+        self.collection_heap_elems = []
         pass #Nothing done for Cells
       elif isinstance(concrete, dict):
+        self.collection_heap_elems = {}
         printDebug(concrete)
         raise Exception("Not handled HeapElements for dicts")
+      else:
+        self.collection_heap_elems = [] # For type matching
     else:
+      self.collection_heap_elems = [] # For type matching
       assert isinstance(concrete, (int, str)), "Unhandled data type"
       self.object_id = concrete #int or str
 

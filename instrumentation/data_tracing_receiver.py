@@ -70,6 +70,7 @@ class DataTracingReceiver(EventReceiver):
   pre_instrument_state_for_iter: bool = False
   timetaken: List[float]
   set_methods: Set[HeapElement]
+  first_frame: Optional[FrameType]
 
   def reset_receiver(self) -> None:
     self.function_call_stack = []
@@ -88,6 +89,7 @@ class DataTracingReceiver(EventReceiver):
     self.frame_stack = []
     self.timetaken = [0.0 for i in self.timetaken]
     self.set_methods = set()
+    self.first_frame = None
 
   def __init__(self) -> None:
     self.function_call_stack = []
@@ -106,6 +108,7 @@ class DataTracingReceiver(EventReceiver):
     self.frame_stack = []
     self.timetaken = [0.0, 0.0]
     self.set_methods = set()
+    self.first_frame = None
     super().__init__()
 
   def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -182,6 +185,11 @@ class DataTracingReceiver(EventReceiver):
 
     if len(self.frame_stack) == 0 or not self.frame_stack[-1] == cur_frame:
       # first time entering this instrumented frame
+
+      # No frames observed till now; this frame is the entry instrumented frame, from which we infer program inputs/outputs
+      if len(self.frame_variables.keys()) == 0:
+        self.first_frame = cur_frame
+
       self.frame_stack.append(cur_frame)
       assert cur_frame not in self.frame_variables, "Cannot reenter a previously exited context"
       self.frame_variables[cur_frame] = {}
@@ -196,9 +204,15 @@ class DataTracingReceiver(EventReceiver):
       if len(self.frame_stack) == 1 or not self.frame_stack[-2] == cur_frame.f_back:
         # this frame was called from a non-instrumented frame, or is the top-level frame,
         # so we have to populate locals without symbolic traces
+        function_object = cur_frame.f_globals[cur_frame.f_code.co_name]
+        parameters = dict(inspect.signature(function_object).parameters.items())
         for local, value in cur_frame.f_locals.items():
           valueHeap = getHeapElement(value, self.heap_object_tracking)
           self.frame_variables[cur_frame][local] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,local), valueHeap)
+          if self.first_frame == cur_frame:
+            if local in parameters:
+              if not parameters[local].default == value:
+                set_input(self.frame_variables[cur_frame][local])
 
         assert len(cur_frame.f_code.co_freevars) == 0, "Not handled free variable function called from non-instrumented or top frame"
       else:
@@ -354,6 +368,9 @@ class DataTracingReceiver(EventReceiver):
         #   ))
     elif opname[opcode] == "RETURN_VALUE":
       self.frame_stack.pop()
+      # If the first instrumented frame returns, it means the value on stack corresponds to the output of the entire program
+      if cur_frame == self.first_frame:
+        set_output(self.symbolic_stack[-1])
       # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
       if len(self.frame_stack) > 0:
         if not self.frame_stack[-1] == cur_frame.f_back:
@@ -602,7 +619,10 @@ class DataTracingReceiver(EventReceiver):
               assert len(nameless_symbolic_elements) == len(sliceStackEl.heap_elem.collection_heap_elems), "Concrete and symbolic arrays should be of the same size"
               self.symbolic_stack.append(sliceStackEl)
               for i in range(len(nameless_symbolic_elements)):
-                add_dependency(frameId, sliceStackEl.heap_elem.collection_heap_elems[i], nameless_symbolic_elements[i])
+                child = sliceStackEl.heap_elem.collection_heap_elems[i]
+                parent = nameless_symbolic_elements[i]
+                if not child == parent:
+                  add_dependency(frameId, child, parent)
             
           else:
             raise Exception("expected collection")
@@ -689,7 +709,7 @@ class DataTracingReceiver(EventReceiver):
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
           #TODO: WHAT ABOUT UNARY_POSITIVE
-          add_dependency(frameId, stackEl, cur_inputs[0], unary_ops[opname[opcode]])
+          add_dependency1(frameId, stackEl, cur_inputs[0], unary_ops[opname[opcode]])
       elif opname[opcode] == "MAKE_FUNCTION":
         if not is_post:
           tos = self.symbolic_stack.pop()
