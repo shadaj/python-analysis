@@ -32,3 +32,4 @@ def heapsort(a):
         heapLength -=1
         trickleDown(a, 0, heapLength)
         i+=1
+    return a

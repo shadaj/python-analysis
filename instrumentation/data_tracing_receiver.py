@@ -644,7 +644,7 @@ class DataTracingReceiver(EventReceiver):
           nameless_symbolic_elements = collection.heap_elem.collection_heap_elems[index_reified]
           assert len(nameless_symbolic_elements) == len(value.heap_elem.collection_heap_elems), "Concrete and symbolic arrays should be of the same size"
           for i in range(len(nameless_symbolic_elements)):
-            add_dependency(frameId, value.heap_elem.collection_heap_elems[i], nameless_symbolic_elements[i])
+            add_dependency(frameId, nameless_symbolic_elements[i], value.heap_elem.collection_heap_elems[i])
         #TODO: Store the Symbolic element in ollection?
         #symbElem = SymbolicElement(collection.heap_elem.object_id.__str__(), loaded_heap_element_at_index)
         # collection.heap_elem.collection_heap_elems[index_reified] = value.heap_elem

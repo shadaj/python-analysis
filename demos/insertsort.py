@@ -9,4 +9,5 @@ def insertion_sort(a):
                 break
             j -= 1
         a[j+1] = t
+    return a
             

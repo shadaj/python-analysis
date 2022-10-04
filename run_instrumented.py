@@ -25,7 +25,7 @@ def testInsertionSort():
   arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
-    insertion_sort(arr)
+    arr = insertion_sort(arr)
   print("InsertionSorted:", arr)
 
 def testSelectionSort():
@@ -35,7 +35,7 @@ def testSelectionSort():
   arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
-    selection_sort(arr)
+    arr = selection_sort(arr)
   print("SelectSorted:", arr)
 
 def testMergeSort():
@@ -65,7 +65,7 @@ def testBubbleSort():
   arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
-    bubble_for(arr)
+    arr = bubble_for(arr)
   print("BubbleSorted:", arr)
 
 def testHeapSort():
@@ -75,7 +75,7 @@ def testHeapSort():
   arr = [random.randint(0,10) for i in range(l)]
   print(arr)
   with receiver:
-    heapsort(arr)
+    arr = heapsort(arr)
   print("HeapSorted:", arr)
 
 def testMatrixMultiplication():
@@ -207,8 +207,8 @@ def generateDataset(mode, num_datapoints):
 # generateDataset("testLLLL", 500)
 # testReductionSum()
 # testMatrixMultiplication()
-
-testTranspose()
+random.seed(92)
+testQuickSort()
 
 patcher.uninstall()
 

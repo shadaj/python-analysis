@@ -121,7 +121,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     param = len(G.get_edge_data(oldChildStr, childStr, default={}))
     edgeMap[(oldChildStr, childStr, param)] = edgeCounter
     G.add_edge(oldChildStr, childStr, sameVariableEdge = True)
-    assert nx.is_directed_acyclic_graph(G)
+    # assert nx.is_directed_acyclic_graph(G)
 
   allObservedPositions.add(child.var_name)
 
@@ -134,7 +134,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     param = len(G.get_edge_data(parentStr, childStr, default={}))
     edgeMap[(parentStr, childStr, param)] = edgeCounter
     G.add_edge(parentStr, childStr, sameVariableEdge = False)
-    assert nx.is_directed_acyclic_graph(G)
+    # assert nx.is_directed_acyclic_graph(G)
 
     variableToLatestVersion[parent.var_name] = parent.version
 
@@ -229,15 +229,19 @@ def generate_memory_graph():
 
         toRemove.append(node)
         resultantEdgeCounter = 2**64 #There wont be graphs this large
-        parentsToIgnore = []
-        childsToIgnore = []
+        parentsSameVariableEdge = []
+        childsSameVariableEdge = []
+        parentsDifferentVariableEdge = []
+        childsDifferentVariableEdge = []
         for parent in parents:
           edge_data = deepcopy(G.get_edge_data(parent, node))
           for key in list(edge_data.keys()):
             param = int(edge_data[key]['sameVariableEdge'])
             # op = edge_data[key]['op']
             if param:
-              parentsToIgnore.append(parent)
+              parentsSameVariableEdge.append(parent)
+            else:
+              parentsDifferentVariableEdge.append(parent)
             G.remove_edge(parent, node, key)
             resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
             del edgeMap[(parent, node, key)]
@@ -248,30 +252,29 @@ def generate_memory_graph():
             param = int(edge_data[key]['sameVariableEdge'])
             # op = edge_data[key]['op']
             if param:
-              childsToIgnore.append(child)
+              childsSameVariableEdge.append(child)
+            else:
+              childsDifferentVariableEdge.append(child)
             G.remove_edge(node, child, key)
             resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
             del edgeMap[(node, child, key)]
             # childOp.append((child, op))
-        for child in childs: #childOp:
-          if child in childsToIgnore:
-            continue
-          for parent in parents:#parentOp:
-            if parent in parentsToIgnore:
-              continue
+        for child in childsDifferentVariableEdge: #childOp:
+          for parent in parentsDifferentVariableEdge: #parentOp:
             # op = op1 + op2 #Only one of op1, op2 are can be nontrivial (non "")
             param = len(G.get_edge_data(parent, child, default={}))
             G.add_edge(parent, child, sameVariableEdge = False)
             edgeMap[(parent, child, param)] = resultantEdgeCounter
-        for child in childsToIgnore:
-          for parent in parentsToIgnore:
+        for child in childsSameVariableEdge:
+          for parent in parentsSameVariableEdge:
             param = len(G.get_edge_data(parent, child, default={}))
             G.add_edge(parent, child, sameVariableEdge = True) 
             edgeMap[(parent, child, param)] = resultantEdgeCounter
     for node in toRemove:
       G.remove_node(node)
 
-  
+  print(len(G.edges), len(G.nodes))
+
   cleanGraph(1)
 
   print(len(G.edges), len(G.nodes))

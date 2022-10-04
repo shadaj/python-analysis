@@ -6,3 +6,4 @@ def selection_sort(a):
             maxi = j if a[j] < maxv else maxi
             maxv = a[j] if a[j] < maxv else maxv
         a[i], a[maxi] = a[maxi], a[i]
+    return a
