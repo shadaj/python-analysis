@@ -211,8 +211,11 @@ class DataTracingReceiver(EventReceiver):
           self.frame_variables[cur_frame][local] = SymbolicElement("\'\'\'%s|%s"%("frame%d"%frameId,local), valueHeap)
           if self.first_frame == cur_frame:
             if local in parameters:
-              if not parameters[local].default == value:
-                set_input(self.frame_variables[cur_frame][local])
+              try:
+                if not parameters[local].default == value:
+                  set_input(self.frame_variables[cur_frame][local])
+              except:
+                pass
 
         assert len(cur_frame.f_code.co_freevars) == 0, "Not handled free variable function called from non-instrumented or top frame"
       else:

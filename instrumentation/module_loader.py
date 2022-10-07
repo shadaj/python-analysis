@@ -1,4 +1,5 @@
 import sys
+import os
 from importlib.abc import MetaPathFinder, Loader
 from importlib.machinery import ModuleSpec
 from types import ModuleType
@@ -43,6 +44,12 @@ class PatchingLoader(Loader):
     if hasattr(self.existing_loader, "get_code"):
       module_code = self.existing_loader.get_code(self.name) # type: ignore
       if module_code:
+        # To ensure if the user code 
+        if hasattr(module, '__file__'):
+          path_dir = module.__file__
+          path_dir = path_dir.rsplit('/', 1)[0]
+          if path_dir not in sys.path:
+            sys.path.append(path_dir)
         print("[Python Analysis] Instrumenting module " + self.name)
         id_to_name, id_to_bytecode, code_to_id = extract_all_codeobjects(module_code)
         id_to_bytecode_new_codeobjects = instrument_extracted(id_to_bytecode, code_to_id, id_to_name)

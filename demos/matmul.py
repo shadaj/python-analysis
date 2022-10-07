@@ -19,6 +19,7 @@ def matmul_for(a, b, c):
         for j in range(len(b)):
             for k in range(len(b[j])):
                 c[i][k] = c[i][k] + a[i][j] * b[j][k]
+    return c
 
 def matmul2(a, b, c):
     I = len(a)

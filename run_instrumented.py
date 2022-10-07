@@ -48,6 +48,16 @@ def testMergeSort():
     arr = merge2(arr)
   print("MergeSorted:", arr)
 
+def testArgMergeSort():
+  global lower, upper
+  from demos.mergesort import argmerge
+  l = random.randint(lower, upper)
+  arr = [random.randint(0,10) for i in range(l)]
+  print(arr)
+  with receiver:
+    indices = argmerge(arr)
+  print("MergeSorted:", indices)
+
 def testQuickSort():
   global lower, upper
   from demos.quicksort import quicksort_return
@@ -88,8 +98,8 @@ def testMatrixMultiplication():
   c = [[0 for i in range(K)] for j in range(I)]
   print(a, b, c)
   with receiver:
-    c = matmul_strassen(a, b)
-    # matmul_for(a, b, c)
+    # c = matmul_strassen(a, b)
+    c = matmul_for(a, b, c)
     # matmul2_for(a, b, c)
     # c = matmul_recursive(a, b)
   print("Multiplication: ", a, b, c)
@@ -108,37 +118,85 @@ def testTrial():
   with receiver:
     trial(a)
 
-def testReductionSum():
-  import sys
+
+####################################################################################################################################
+############################################ NUMPY APIs ############################################################################
+####################################################################################################################################
+
+### HELPER
+
+def get_broadcast_compatible_shape(original, max_dim):
   import numpy as np
-  import os
-  sys.path.append(os.getcwd())
-  sys.path.append('/Users/aayan/Desktop/Research/python-analysis/APIs')
+  if np.random.randint(0, 2):
+    return original
+  new_shape = []
+  for i in original[::-1]:
+    if i == 1:
+      if np.random.randint(0, 2):
+        new_shape.append(np.random.randint(2, max_dim))
+      else:
+        new_shape.append(i)
+    else:
+      if np.random.randint(0, 2):
+        new_shape.append(1)
+      else:
+        new_shape.append(i)
+    if np.random.randint(0, 2):
+      return new_shape[::-1]
+  if np.random.randint(0, 2):
+    new_shape.append(np.random.randint(1, max_dim))
+  return new_shape[::-1]
+
+
+### DATASET GENERATORS
+
+def testReductionSum(dims, dim_size_max):
+  import numpy as np
   import APIs.sum as sum
-  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  keepdims = np.random.choice([None, True])
+  initial = np.random.choice([None, 1])
+  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  print(initial)
+  print(where, size_where)
   with receiver:
-    ans = sum.sum_1(a, axis=1)
-  print("reduction: ", ans)
+    ans = sum.sum_1(a, axis=axis, keepdims=keepdims, initial=initial, where=where)
+  print("reduction sum: ", ans)
 
 def testAdd():
   import sys
   import numpy as np
   import os
   sys.path.append(os.getcwd())
-  sys.path.append('/Users/aayan/Desktop/Research/python-analysis/APIs')
   import APIs.add as add
-  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
+  a = np.random.uniform(low=-10., high=10., size=(2, 1, 3)).tolist()
   b = np.random.uniform(low=-10., high=10., size=(2, 1)).tolist()
   with receiver:
     ans = add.add_1(a, b)
   print("addition: ", ans)
+
+def testMax():
+  import sys
+  import numpy as np
+  import os
+  sys.path.append(os.getcwd())
+  import APIs.max as max
+  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
+  with receiver:
+    ans = max.max_1(a, axis=[0,2])
+  print("maximum: ", ans)
 
 def testTranspose():
   import sys
   import numpy as np
   import os
   sys.path.append(os.getcwd())
-  sys.path.append('/Users/aayan/Desktop/Research/python-analysis/APIs')
   import APIs.transpose as transpose
   a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
   with receiver:
@@ -208,7 +266,12 @@ def generateDataset(mode, num_datapoints):
 # testReductionSum()
 # testMatrixMultiplication()
 random.seed(92)
-testQuickSort()
+import time
+st = time.time()
+for i in range(1):
+  testReductionSum()
+en = time.time()
+print(en - st)
 
 patcher.uninstall()
 
