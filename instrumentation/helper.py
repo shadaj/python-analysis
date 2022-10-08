@@ -1,6 +1,6 @@
 from distutils.log import debug
 
-showPlot = False
+showPlot = True
 
 def isShowPlot():
     return showPlot

@@ -169,6 +169,114 @@ def testReductionSum(dims, dim_size_max):
     ans = sum.sum_1(a, axis=axis, keepdims=keepdims, initial=initial, where=where)
   print("reduction sum: ", ans)
 
+def testReductionProd(dims, dim_size_max):
+  import numpy as np
+  import APIs.prod as prod
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  keepdims = np.random.choice([None, True])
+  initial = np.random.choice([None, 1])
+  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  print(initial)
+  print(where, size_where)
+  with receiver:
+    ans = prod.prod_1(a, axis=axis, keepdims=keepdims, initial=initial, where=where)
+  print("reduction prod: ", ans)
+
+def testReductionMax(dims, dim_size_max):
+  import numpy as np
+  import APIs.max as max
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  keepdims = np.random.choice([None, True])
+  initial = np.random.choice([None, 1])
+  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  print(initial)
+  print(where, size_where)
+  with receiver:
+    ans = max.max_1(a, axis=axis, keepdims=keepdims, initial=initial, where=where)
+  print("reduction max: ", ans)
+
+def testReductionMin(dims, dim_size_max):
+  import numpy as np
+  import APIs.min as min
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  keepdims = np.random.choice([None, True])
+  initial = np.random.choice([None, 1])
+  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  print(initial)
+  print(where, size_where)
+  with receiver:
+    ans = min.min_1(a, axis=axis, keepdims=keepdims, initial=initial, where=where)
+  print("reduction min: ", ans)
+
+def testReductionMean(dims, dim_size_max):
+  import numpy as np
+  import APIs.mean as mean
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  keepdims = np.random.choice([None, True])
+  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  print(where, size_where)
+  with receiver:
+    ans = mean.mean_1(a, axis=axis, keepdims=keepdims, where=where)
+  print("reduction min: ", ans)
+
+def testReductionAll(dims, dim_size_max):
+  import numpy as np
+  import APIs.all as all
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  a = np.random.choice([True, False], size=size).tolist()
+  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  keepdims = np.random.choice([None, True])
+  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  print(where, size_where)
+  with receiver:
+    ans = all.all_1(a, axis=axis, keepdims=keepdims, where=where)
+  print("reduction all: ", ans)
+
+def testReductionAny(dims, dim_size_max):
+  import numpy as np
+  import APIs.any as any
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  a = np.random.choice([True, False], size=size).tolist()
+  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  keepdims = np.random.choice([None, True])
+  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  print(where, size_where)
+  with receiver:
+    ans = any.any_1(a, axis=axis, keepdims=keepdims, where=where)
+  print("reduction any: ", ans)
+
 def testAdd():
   import sys
   import numpy as np
@@ -269,7 +377,7 @@ random.seed(92)
 import time
 st = time.time()
 for i in range(1):
-  testReductionSum()
+  testReductionMean(3, 4)
 en = time.time()
 print(en - st)
 
