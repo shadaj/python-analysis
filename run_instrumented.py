@@ -3,6 +3,8 @@ from re import L
 from textwrap import dedent
 from dis import opname
 
+from numpy import dtype
+
 from instrumentation.stack_tracking_receiver import StackTrackingReceiver
 from instrumentation.data_tracing_receiver import DataTracingReceiver
 from instrumentation.module_loader import PatchingPathFinder
@@ -133,7 +135,7 @@ def get_broadcast_compatible_shape(original, max_dim):
   for i in original[::-1]:
     if i == 1:
       if np.random.randint(0, 2):
-        new_shape.append(np.random.randint(2, max_dim))
+        new_shape.append(np.random.randint(2, max_dim + 1))
       else:
         new_shape.append(i)
     else:
@@ -144,7 +146,7 @@ def get_broadcast_compatible_shape(original, max_dim):
     if np.random.randint(0, 2):
       return new_shape[::-1]
   if np.random.randint(0, 2):
-    new_shape.append(np.random.randint(1, max_dim))
+    new_shape.append(np.random.randint(1, max_dim + 1))
   return new_shape[::-1]
 
 
@@ -154,7 +156,7 @@ def testReductionSum(dims, dim_size_max):
   import numpy as np
   import APIs.sum as sum
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  size_where = get_broadcast_compatible_shape(size, dim_size_max)
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
   axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
@@ -173,7 +175,7 @@ def testReductionProd(dims, dim_size_max):
   import numpy as np
   import APIs.prod as prod
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  size_where = get_broadcast_compatible_shape(size, dim_size_max)
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
   axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
@@ -192,7 +194,7 @@ def testReductionMax(dims, dim_size_max):
   import numpy as np
   import APIs.max as max
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  size_where = get_broadcast_compatible_shape(size, dim_size_max)
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
   axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
@@ -211,7 +213,7 @@ def testReductionMin(dims, dim_size_max):
   import numpy as np
   import APIs.min as min
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  size_where = get_broadcast_compatible_shape(size, dim_size_max)
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
   axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
@@ -230,7 +232,7 @@ def testReductionMean(dims, dim_size_max):
   import numpy as np
   import APIs.mean as mean
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  size_where = get_broadcast_compatible_shape(size, dim_size_max)
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
   axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
@@ -247,7 +249,7 @@ def testReductionAll(dims, dim_size_max):
   import numpy as np
   import APIs.all as all
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  size_where = get_broadcast_compatible_shape(size, dim_size_max)
   a = np.random.choice([True, False], size=size).tolist()
   axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
@@ -264,7 +266,7 @@ def testReductionAny(dims, dim_size_max):
   import numpy as np
   import APIs.any as any
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max+1)
+  size_where = get_broadcast_compatible_shape(size, dim_size_max)
   a = np.random.choice([True, False], size=size).tolist()
   axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
@@ -277,39 +279,250 @@ def testReductionAny(dims, dim_size_max):
     ans = any.any_1(a, axis=axis, keepdims=keepdims, where=where)
   print("reduction any: ", ans)
 
-def testAdd():
-  import sys
+def testAdd(dims, dim_size_max):
   import numpy as np
-  import os
-  sys.path.append(os.getcwd())
   import APIs.add as add
-  a = np.random.uniform(low=-10., high=10., size=(2, 1, 3)).tolist()
-  b = np.random.uniform(low=-10., high=10., size=(2, 1)).tolist()
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_b = get_broadcast_compatible_shape(size_a, dim_size_max)
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  b = np.random.uniform(low=-10., high=10., size=size_b).tolist()
+  print(a, size_a)
+  print(b, size_b)
   with receiver:
     ans = add.add_1(a, b)
-  print("addition: ", ans)
+  print("add: ", ans)
 
-def testMax():
-  import sys
+def testSubtract(dims, dim_size_max):
   import numpy as np
-  import os
-  sys.path.append(os.getcwd())
-  import APIs.max as max
-  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
+  import APIs.sub as sub
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_b = get_broadcast_compatible_shape(size_a, dim_size_max)
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  b = np.random.uniform(low=-10., high=10., size=size_b).tolist()
+  print(a, size_a)
+  print(b, size_b)
   with receiver:
-    ans = max.max_1(a, axis=[0,2])
-  print("maximum: ", ans)
+    ans = sub.sub_1(a, b)
+  print("sub: ", ans)
 
-def testTranspose():
-  import sys
+def testDivide(dims, dim_size_max):
   import numpy as np
-  import os
-  sys.path.append(os.getcwd())
+  import APIs.div as div
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_b = get_broadcast_compatible_shape(size_a, dim_size_max)
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  b = np.random.randint(-5, 5, size=size_b).tolist()
+  print(a, size_a)
+  print(b, size_b)
+  with receiver:
+    ans = div.div_1(a, b)
+  print("div: ", ans)
+
+def testMultiply(dims, dim_size_max):
+  import numpy as np
+  import APIs.mul as mul
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_b = get_broadcast_compatible_shape(size_a, dim_size_max)
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  b = np.random.uniform(low=-10., high=10., size=size_b).tolist()
+  print(a, size_a)
+  print(b, size_b)
+  with receiver:
+    ans = mul.mul_1(a, b)
+  print("mul: ", ans)
+
+def testPower(dims, dim_size_max):
+  import numpy as np
+  import APIs.pow as pow
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_b = get_broadcast_compatible_shape(size_a, dim_size_max)
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  b = np.random.uniform(low=-10., high=10., size=size_b).tolist()
+  print(a, size_a)
+  print(b, size_b)
+  with receiver:
+    ans = pow.pow_1(a, b)
+  print("pow: ", ans)
+
+def testAbs(dims, dim_size_max):
+  import numpy as np
+  import APIs.abs as abs
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  print(a, size_a)
+  with receiver:
+    ans = abs.abs_1(a)
+  print("pow: ", ans)
+
+def testExp(dims, dim_size_max):
+  import numpy as np
+  import APIs.exp as exp
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  print(a, size_a)
+  with receiver:
+    ans = exp.exp_1(a)
+  print("pow: ", ans)
+
+def testSqrt(dims, dim_size_max):
+  import numpy as np
+  import APIs.sqrt as sqrt
+  size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  print(a, size_a)
+  with receiver:
+    ans = sqrt.sqrt_1(a)
+  print("pow: ", ans)
+
+def testZeros(dims, dim_size_max):
+  import numpy as np
+  import APIs.zeros as zeros
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  print(size)
+  with receiver:
+    ans = zeros.zeros_1(size)
+  print("zeros: ", ans)
+
+def testZerosLike(dims, dim_size_max):
+  import numpy as np
+  import APIs.zeros_like as zeros_like
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  print(a, size)
+  with receiver:
+    ans = zeros_like.zeros_like_1(a)
+  print("zeros like: ", ans)
+
+def testOnes(dims, dim_size_max):
+  import numpy as np
+  import APIs.ones as ones
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  print(size)
+  with receiver:
+    ans = ones.ones_1(size)
+  print("ones: ", ans)
+
+def testOnesLike(dims, dim_size_max):
+  import numpy as np
+  import APIs.ones_like as ones_like
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  print(a, size)
+  with receiver:
+    ans = ones_like.ones_like_1(a)
+  print("ones like: ", ans)
+
+def testShape(dims, dim_size_max):
+  import numpy as np
+  import APIs.shape as shape
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  print(a, size)
+  with receiver:
+    ans = shape.shape_1(a)
+  print("shape: ", ans)
+
+def testTranspose(dims, dim_size_max):
+  import numpy as np
   import APIs.transpose as transpose
-  a = np.random.uniform(low=-10., high=10., size=(2, 2, 3)).tolist()
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  axis = np.random.choice([None, np.random.permutation(len(size)).tolist()])
+  print(a, size)
+  print(axis)
   with receiver:
-    ans = transpose.transpose_1(a)
+    ans = transpose.transpose_1(a, axis)
   print("transpose: ", ans)
+
+def testEye(dims, dim_size_max):
+  import numpy as np
+  import APIs.eye as eye
+  N = np.random.randint(1, dim_size_max+1)
+  M = np.random.choice([None, np.random.randint(1, dim_size_max+1)])
+  mx = max(N, M) if M is not None else N
+  k = np.random.choice([0, np.random.randint(-mx, mx+1)]).item() # Weird typecasting being done by np.random.choice
+  print(N)
+  print(M)
+  print(k)
+  with receiver:
+    ans = eye.eye_1(N, M, k)
+  print("eye: ", ans)
+
+def testConcatenate(dims, dim_size_max):
+  import numpy as np
+  import APIs.concatenate as concatenate
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  axis = np.random.choice([None, np.random.randint(len(size))])
+  N = np.random.randint(1, dims+1) # Number of arrays to concatenate, using dims variable
+  arrays = []
+  print(axis)
+  for i in range(N):
+    if axis is not None:
+      size_ = list(size)
+      size_[axis] = np.random.randint(1, dim_size_max+1) # Concatenated axis may be different in all operands
+    else:
+      size_ = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+    a = np.random.uniform(low=-10., high=10., size=size_).tolist()
+    print(a, size_)
+    arrays.append(a)
+  with receiver:
+    ans = concatenate.concatenate_1(axis, *arrays)
+  print("concatenate: ", ans)
+
+def testDot(dims, dim_size_max):
+  import numpy as np
+  import APIs.dot as dot
+  size_a = ([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_b = ([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  if len(size_b) == 1:
+    size_b[-1] = size_a[-1]
+  elif len(size_b) >= 2:
+    size_b[-2] = size_a[-1]
+  size_a = tuple(size_a)
+  size_b = tuple(size_b)
+  a = np.random.uniform(low=-10., high=10., size=size_a).tolist()
+  b = np.random.uniform(low=-10., high=10., size=size_b).tolist()
+  print(a, size_a)
+  print(b, size_b)
+  with receiver:
+    ans = dot.dot_1(a, b)
+  print("dot: ", ans)
+
+def testArange(dims, dim_size_max):
+  import numpy as np
+  import APIs.arange as arange
+  start = np.random.randint(dim_size_max * 50)
+  stop = np.random.choice([None, np.random.randint(dim_size_max * 75)])
+  step = np.random.choice([None] + [i for i in range(1, dim_size_max)] + [i for i in range(-dim_size_max, 0)])
+  print(start)
+  print(stop)
+  print(step)
+  with receiver:
+    ans = arange.arange_1(start, stop, step)
+  print("arange: ", ans)
+
+
+def testLinspace(dims, dim_size_max):
+  import numpy as np
+  import APIs.linspace as linspace
+  size_start = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size_stop = get_broadcast_compatible_shape(size_start, dim_size_max)
+  start = np.random.uniform(low=-10., high=10., size=size_start).tolist()
+  stop = np.random.uniform(low=-10., high=10., size=size_stop).tolist()
+  num = np.random.choice([2, 3, dim_size_max])
+  endpoint = np.random.choice([True, False])
+  retstep = np.random.choice([True, False])
+  axis = np.random.choice([np.random.randint(len(size_start))])
+  print(start)
+  print(stop)
+  print(num)
+  print(endpoint)
+  print(retstep)
+  print(axis)
+  with receiver:
+    ans = linspace.linspace_1(start, stop, num, endpoint, retstep, axis)
+  print("linspace: ", ans)
+
 
 def generateDataset(mode, num_datapoints):
   global receiver
@@ -376,8 +589,8 @@ def generateDataset(mode, num_datapoints):
 random.seed(92)
 import time
 st = time.time()
-for i in range(1):
-  testReductionMean(3, 4)
+for i in range(100):
+  testLinspace(2, 2)
 en = time.time()
 print(en - st)
 
