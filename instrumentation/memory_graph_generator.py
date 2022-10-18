@@ -1,6 +1,6 @@
+from calendar import c
 from statistics import mean
 from typing import Any, Dict, List, Set, Tuple, Union, Optional
-from typing_extensions import Literal
 
 from bytecode import Compare
 
@@ -13,10 +13,12 @@ from .instrument import binary_ops, unary_ops
 import networkx as nx
 import matplotlib.pyplot as plt
 
-import copy
 from collections import deque
 
 from .helper import printDebug, isShowPlot
+
+edgesSum = 0
+nodesSum = 0
 
 generatedGraphs = 0
 
@@ -42,6 +44,7 @@ def add_dependency(frameId: int, child: Union[SymbolicElement, StackElement], pa
   printDebug("Child: ", str(child))
   printDebug("Parent: ", str(parent))
   child.heap_elem = parent.heap_elem
+  child.is_const = parent.is_const
   add_dependency_internal(frameId, [(child, parent)])
 
 # def add_relation(value: bool, dest: Union[SymbolicElement, StackElement], orig: Union[SymbolicElement, StackElement], op: str) -> None:
@@ -60,6 +63,7 @@ def add_dependency1(frameId: int, child: Union[SymbolicElement, StackElement], p
   printDebug("New dependency: ")
   printDebug("Child: ", str(child))
   printDebug("Parent1: ", str(parent1))
+  child.is_const = parent1.is_const
   add_dependency_internal(frameId, [(child, parent1)], operation)
 
 def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], operation: Optional[str] = None, establishedFact: Optional[Compare] = None) -> None:
@@ -70,6 +74,7 @@ def add_dependency2(frameId: int, child: Union[SymbolicElement, StackElement], p
   printDebug("Child: ", str(child))
   printDebug("Parent1: ", str(parent1))
   printDebug("Parent2: ", str(parent2))
+  child.is_const = parent1.is_const and parent2.is_const
   add_dependency_internal(frameId, [(child, parent1), (child, parent2)], operation, establishedFact)
 
 def add_dependency3(frameId: int, child: Union[SymbolicElement, StackElement], parent1: Union[SymbolicElement, StackElement], parent2: Union[SymbolicElement, StackElement], parent3: Union[SymbolicElement, StackElement]) -> None:
@@ -81,10 +86,28 @@ def add_dependency3(frameId: int, child: Union[SymbolicElement, StackElement], p
   printDebug("Parent1: ", str(parent1))
   printDebug("Parent2: ", str(parent2))
   printDebug("Parent3: ", str(parent3))
+  child.is_const = parent1.is_const and parent2.is_const and parent3.is_const
   add_dependency_internal(frameId, [(child, parent1), (child, parent2), (child, parent3)])
+
+def add_dependencyN(frameId: int, child: Union[SymbolicElement, StackElement], parents: List[Union[SymbolicElement, StackElement]], operation: Optional[str] = None) -> None:
+  global dependencyCount
+  dependencyCount += 1
+  printDebug("DEP COUNT: ", dependencyCount)
+  printDebug("New dependency: ")
+  printDebug("Child: ", str(child))
+  red = True
+  depList = []
+  for i, parent in enumerate(parents):
+    printDebug("Parent%d: "%(i+1), str(parent))
+    red = red and parent.is_const
+    depList.append((child, parent))
+  child.is_const = red
+  add_dependency_internal(frameId, depList, operation)
 
 allObservedPositions = set()
 variableToLatestVersion = {}
+
+current_heap_object_tracker: HeapObjectTracker = None
 
 G = nx.MultiDiGraph()
 dependencyCount = 0
@@ -95,8 +118,31 @@ nodeEdgeCounts = [(0,0)]
 edgeCounter = 0
 edgeMap = {}
 
+num_inputs = 0
 inputs: Set[str] = set()
+inputMap: Dict[str, Tuple[int, int, int]] = {}
+num_outputs = 0
 outputs: Set[str] = set()
+outputMap: Dict[str, Tuple[int, int, int]] = {}
+
+def set_current_heap_object_tracker(hot: HeapObjectTracker) -> None:
+  global current_heap_object_tracker
+  current_heap_object_tracker = hot
+
+def get_const_number_instance(stack_or_heap_element: Union[SymbolicElement, StackElement]) -> Optional[Union[int, float]]:
+  global current_heap_object_tracker
+  if stack_or_heap_element.is_const:
+    if isinstance(cnst := stack_or_heap_element.heap_elem.object_id, (bool, int)):
+      return cnst
+    elif isinstance(cnst := stack_or_heap_element.heap_elem.object_id, (str)):
+      return None
+    else:
+      if isinstance(cnst2 := current_heap_object_tracker.get_by_id(cnst.id), (int, float)):
+        return cnst2
+      else:
+        return None
+  else:
+    return None
 
 def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElement, StackElement], Union[SymbolicElement, StackElement]]], operation: Optional[str] = None, establishedFact: Optional[Compare] = None) -> None:
   global allObservedPositions, edgeCounter, edgeMap
@@ -113,7 +159,10 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
   oldChildVersion = variableToLatestVersion.get(child.var_name, None)
   variableToLatestVersion[child.var_name] = child.version
 
-  G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact)
+  if cnst_val := get_const_number_instance(child) is not None:
+    G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact, const_val = cnst_val)
+  else:
+    G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact)
 
   if oldChildVersion is not None:
     oldChildStr = element_to_str(child, oldChildVersion)
@@ -129,7 +178,10 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     parent = dep[1]
     parentStr = element_to_str(parent)
     if parentStr not in G:
-      G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId, op = None, fact = None)
+      if cnst_val := get_const_number_instance(parent) is not None:
+        G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId, op = None, fact = None, const_val = cnst_val)
+      else:
+        G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId, op = None, fact = None)
     edgeCounter += 1
     param = len(G.get_edge_data(parentStr, childStr, default={}))
     edgeMap[(parentStr, childStr, param)] = edgeCounter
@@ -141,23 +193,56 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     allObservedPositions.add(parent.var_name)
 
 def set_output(element: Union[StackElement, SymbolicElement]) -> None:
-  global outputs
+  global outputs, outputMap, num_outputs
   outputs.add(element_to_str(element))
+  num_outputs += 1
+  counter = 1
+  outputMap[element_to_str(element)] = (2, num_outputs, counter)
   for i in element.heap_elem.collection_heap_elems:
-    set_output(i)
+    counter = set_output_internal(i, counter)
 
-def set_input(element: SymbolicElement) -> None:
-  global inputs
-  inputs.add(element_to_str(element))
+def set_output_internal(element: Union[StackElement, SymbolicElement], counter: int) -> int:
+  global outputs, outputMap, num_outputs
+  outputs.add(element_to_str(element))
+  counter += 1
+  outputMap[element_to_str(element)] = (2, num_outputs, counter)
   for i in element.heap_elem.collection_heap_elems:
-    set_input(i)
+    counter = set_output_internal(i, counter)
+  return counter
+
+def set_input(element: Union[StackElement, SymbolicElement]) -> None:
+  global inputs, inputMap, num_inputs
+  inputs.add(element_to_str(element))
+  num_inputs += 1
+  counter = 1
+  inputMap[element_to_str(element)] = (1, num_inputs, counter)
+  for i in element.heap_elem.collection_heap_elems:
+    counter = set_input_internal(i, counter)
+
+def set_input_internal(element: Union[StackElement, SymbolicElement], counter: int) -> int:
+  global inputs, inputMap, num_inputs
+  inputs.add(element_to_str(element))
+  counter += 1
+  inputMap[element_to_str(element)] = (1, num_inputs, counter)
+  for i in element.heap_elem.collection_heap_elems:
+    counter = set_input_internal(i, counter)
+  return counter
+
 
 def is_input_or_output(nodeStr: str) -> bool:
   global inputs, outputs
   return nodeStr in inputs or nodeStr in outputs
 
+def is_output(nodeStr: str) -> bool:
+  global outputs
+  return nodeStr in outputs
+
+def is_input(nodeStr: str) -> bool:
+  global inputs
+  return nodeStr in inputs
+
 def generate_memory_graph():
-  global allObservedPositions, G, dependencyCount, variableToLatestVersion, generatedGraphs, object_id_to_heap_element_map, edgeMap, edgeCounter, inputs, outputs
+  global allObservedPositions, G, dependencyCount, variableToLatestVersion, generatedGraphs, object_id_to_heap_element_map, edgeMap, edgeCounter, inputs, outputs, inputMap, outputMap, num_inputs, num_outputs, edgesSum, nodesSum
   assert nx.is_directed_acyclic_graph(G)
   maxIndex = 0
   positionStrToXcoord = {}
@@ -192,31 +277,53 @@ def generate_memory_graph():
   GnodeToFrame = nx.get_node_attributes(G, 'frame')
   GnodeToOp = nx.get_node_attributes(G, 'op')
   GnodeToFact = nx.get_node_attributes(G, 'fact')
+  GnodeToConstVal = nx.get_node_attributes(G, 'const_val')
 
   # Pruning extra nodes. Any node which does not have "nameless" in it's name, i.e. is not a compound data structure (non primitive like int/str) 
   # is treated as a node to exclude. This is a temporary logic and can be changed in the future. #TODO Robust logic 
   from copy import deepcopy
   import numpy as np
 
+  all_Nodes = list(reversed(list(nx.topological_sort(G))))
+
   
   def cleanGraph(stage):
     global edgeCounter
     toRemove = []
-    for node in allNodes:
+    iteration = all_Nodes
+    if stage == 2:
+      iteration = list(reversed(iteration))
+    for node in iteration:
       if node not in G.nodes:
         # Element has already been deleted so we do not need to consider it anymore
         continue
       if not is_input_or_output(node):
         childs = [c for c in G.successors(node)]
         parents = [p for p in G.predecessors(node)]
+        childOp = [g for c in G.successors(node) if (g := GnodeToOp[c]) is not None]
         # childOp = []
         # parentOp = []
-        
+        operation = GnodeToOp[node]
+        if operation is not None:
+          op = operation[1:]
+          arity = int(operation[0])
+        else:
+          op = None
+          arity = None
+        const = GnodeToConstVal.get(node, None)
         if stage == 1:
-          if GnodeToOp[node] is not None and node in relevantNodes:
+          if ((operation is not None) or (const is not None and len(childOp) > 0)) and node in relevantNodes:
             continue
         elif stage == 2:
-          if GnodeToOp[node] != "?" or len(childs) > 0: # We remove a ? node where there are no children
+          if not (operation is not None and len(parents) < arity):
+            continue
+        elif stage == 3:
+          if op == "?":
+            continue
+          elif len(childs) != 0 or is_output(node):
+            continue
+        elif stage == 4:
+          if not (op == "?" and len(childs) == 0): # We remove a ? node where there are no children
             continue
           else:
             if len(parents) == 2:
@@ -237,7 +344,6 @@ def generate_memory_graph():
           edge_data = deepcopy(G.get_edge_data(parent, node))
           for key in list(edge_data.keys()):
             param = int(edge_data[key]['sameVariableEdge'])
-            # op = edge_data[key]['op']
             if param:
               parentsSameVariableEdge.append(parent)
             else:
@@ -245,12 +351,10 @@ def generate_memory_graph():
             G.remove_edge(parent, node, key)
             resultantEdgeCounter = min(edgeMap[(parent, node, key)], resultantEdgeCounter)
             del edgeMap[(parent, node, key)]
-            # parentOp.append((parent, op))
         for child in childs:
           edge_data = deepcopy(G.get_edge_data(node, child))
           for key in list(edge_data.keys()):
             param = int(edge_data[key]['sameVariableEdge'])
-            # op = edge_data[key]['op']
             if param:
               childsSameVariableEdge.append(child)
             else:
@@ -258,10 +362,8 @@ def generate_memory_graph():
             G.remove_edge(node, child, key)
             resultantEdgeCounter = min(edgeMap[(node, child, key)], resultantEdgeCounter)
             del edgeMap[(node, child, key)]
-            # childOp.append((child, op))
         for child in childsDifferentVariableEdge: #childOp:
           for parent in parentsDifferentVariableEdge: #parentOp:
-            # op = op1 + op2 #Only one of op1, op2 are can be nontrivial (non "")
             param = len(G.get_edge_data(parent, child, default={}))
             G.add_edge(parent, child, sameVariableEdge = False)
             edgeMap[(parent, child, param)] = resultantEdgeCounter
@@ -278,6 +380,19 @@ def generate_memory_graph():
   cleanGraph(1)
 
   print(len(G.edges), len(G.nodes))
+
+  cleanGraph(2)
+
+  print(len(G.edges), len(G.nodes))
+
+  cleanGraph(3)
+
+  print(len(G.edges), len(G.nodes))
+
+  edgesSum += len(G.edges)
+  nodesSum += len(G.nodes)
+
+  print("!!!: ", edgesSum, ":::", nodesSum)
 
   def getXY(raw: Tuple[str, int]):
     return (positionStrToXcoord[raw[0]], raw[1])
@@ -318,7 +433,9 @@ def generate_memory_graph():
     else:
       pos[key] = (oldXtoNewXcoords[value[0]], value[1])
 
-  cleanGraph(2)
+  cleanGraph(4)
+
+  print(len(G.edges), len(G.nodes))
 
   ops = {}
   for i, k in binary_ops.items():
@@ -329,6 +446,7 @@ def generate_memory_graph():
   opToId = {}
   for i, (k, v) in enumerate(ops.items()):
     opToId[v] = i + 1
+  default_i = i + 2
   opToId[None] = 0
 
   GsameVariableEdge = nx.get_edge_attributes(G,'sameVariableEdge')
@@ -341,12 +459,34 @@ def generate_memory_graph():
   nodeMap = {}
   nodeDetails = []
   edgeDetails = []
-  low = min([k[0] for i, k in pos.items()])
-  high = max([k[0] for i, k in pos.items()])
+  # low = min([k[0] for i, k in pos.items()])
+  # high = max([k[0] for i, k in pos.items()])
+
+  nodeToVector = {}
   for i, k in pos.items():
+    constVal = GnodeToConstVal.get(i, None)
     nodeMap[i] = nodeNumber
     nodeNumber += 1
-    nodeDetails.append([nodeNumber, -1, np.sin((k[0] - low) / (high - low)), opToId[GnodeToOp[i]]])
+    if is_input(i):
+      first_three = inputMap[i]
+    elif is_output(i):
+      first_three = outputMap[i]
+    else:
+      first_three = (0, 0, 0)
+    if constVal is not None:
+      consts = (1, float(constVal))
+    else:
+      consts = (0, 0)
+    operation = opToId.get(GnodeToOp[i], default_i)
+    nodeToVector[i] = (first_three + (operation,) + consts)
+    nodeDetails.append([nodeMap[i], -1] + list(nodeToVector[i]))
+
+  # for i, k in pos.items():
+  #   nodeMap[i] = nodeNumber
+  #   nodeNumber += 1
+  #   nodeDetails.append([nodeNumber, -1, np.sin((k[0] - low) / (high - low)), opToId.get(GnodeToOp[i], default_i)])
+    # nodeDetail = [nodeNumber, -1, I/O, -1, k[0]]
+    # nodeDetails.append()
   for e in G.edges:
     val = int(GfactEdge[e])+1 if isinstance(GfactEdge[e], Compare) else 0
     edgeDetails.append([nodeMap[e[0]], nodeMap[e[1]], -1, val])
@@ -359,13 +499,11 @@ def generate_memory_graph():
   printDebug(pos_raw)
   printDebug(pos)
 
-
   if isShowPlot():
     GfactEdge = {(u, v): d.get('fact',"") for u, v, d in G.edges(data=True)}
     nx.draw_networkx_nodes(G, pos)
     nx.draw_networkx_labels(G, pos, labels={n: \
-      str(GnodeToFrame[n]) + ":" + str(GnodeToOp[n] if GnodeToOp[n] is not None else "") \
-         for n in G}, font_size=10)
+      str(nodeToVector[n]) for n in G}, font_size=10)
     # nx.draw_networkx_edge_labels(G, pos, edge_labels=GopEdge, font_size=10, bbox=dict(alpha=0))
     nx.draw_networkx_edge_labels(G, pos, edge_labels=GfactEdge, font_size=10, bbox=dict(alpha=0))
 
@@ -484,6 +622,10 @@ def generate_memory_graph():
   edgeMap = {}
   inputs = set()
   outputs = set()
+  inputMap = {}
+  outputMap = {}
+  num_inputs = 0
+  num_outputs = 0
 
   return allNodeDetails, allEdgeDetails, nodeEdgeCounts
 

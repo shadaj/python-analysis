@@ -80,20 +80,24 @@ class SymbolicElement(object):
   var_name: str
   heap_elem: HeapElement
   version: int
+  is_const: bool
 
   def __init__(self, var_name: str, elems: Union[HeapElement, StackElement, None], version = 0) -> None:
     if isinstance(elems, HeapElement):
       self.var_name = var_name
       self.heap_elem = elems
       self.version = version #Starting version of any symbolic element is zero
+      self.is_const = False #Default behavior
     elif isinstance(elems, StackElement):
       self.var_name = var_name
       self.heap_elem = elems.heap_elem 
       self.version = elems.version + 1
+      self.is_const = elems.is_const
     elif elems is None: # Allowed for cell and free variables for a code object
       self.var_name = var_name
       self.heap_elem = elems
       self.version = version 
+      self.is_const = False
     else:
       raise Exception("Unexpected type")
 
@@ -101,12 +105,18 @@ class SymbolicElement(object):
     assert self.heap_elem is None, "Cannot overwrite HeapElement corresponding to a SymbolicElement if it is not already None"
     self.heap_elem = elems
 
+  def set_const(self) -> None:
+    self.is_const = True
+    for item in self.heap_elem.collection_heap_elems:
+      item.set_const()
+
 stackElementCount = 0
 
 class StackElement(object):
   heap_elem: HeapElement
   version: int
   var_name: str
+  is_const: bool
 
   def __init__(self, elems: Union[HeapElement, SymbolicElement], version = 0) -> None:
     global stackElementCount
@@ -115,13 +125,20 @@ class StackElement(object):
     if isinstance(elems, HeapElement):
       self.heap_elem = elems
       self.version = version #Starting version of any stack element is the same as parent object
+      self.is_const = False #Default behavior
     elif isinstance(elems, SymbolicElement):
       self.heap_elem = elems.heap_elem
       self.version = elems.version + 1
+      self.is_const = elems.is_const
     elif elems is None:
       raise Exception("Cell var not initialized before bringing onto stack")
     else:
       raise Exception("Unexpected type")
+
+  def set_const(self) -> None:
+    self.is_const = True
+    for item in self.heap_elem.collection_heap_elems:
+      item.set_const()
 
   def duplicate(self) -> StackElement:
       return StackElement(self.heap_elem, self.version)

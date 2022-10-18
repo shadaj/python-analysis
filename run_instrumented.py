@@ -1,4 +1,4 @@
-import imp
+import os
 from re import L
 from textwrap import dedent
 from dis import opname
@@ -352,7 +352,7 @@ def testAbs(dims, dim_size_max):
   print(a, size_a)
   with receiver:
     ans = abs.abs_1(a)
-  print("pow: ", ans)
+  print("abs: ", ans)
 
 def testExp(dims, dim_size_max):
   import numpy as np
@@ -372,7 +372,7 @@ def testSqrt(dims, dim_size_max):
   print(a, size_a)
   with receiver:
     ans = sqrt.sqrt_1(a)
-  print("pow: ", ans)
+  print("sqrt: ", ans)
 
 def testZeros(dims, dim_size_max):
   import numpy as np
@@ -491,8 +491,9 @@ def testDot(dims, dim_size_max):
 def testArange(dims, dim_size_max):
   import numpy as np
   import APIs.arange as arange
-  start = np.random.randint(dim_size_max * 50)
-  stop = np.random.choice([None, np.random.randint(dim_size_max * 75)])
+  start = np.random.randint(dim_size_max * 20)
+  stop = np.random.choice([None, np.random.randint(dim_size_max * 10)])
+  stop = stop + start if stop is not None else None
   step = np.random.choice([None] + [i for i in range(1, dim_size_max)] + [i for i in range(-dim_size_max, 0)])
   print(start)
   print(stop)
@@ -586,14 +587,108 @@ def generateDataset(mode, num_datapoints):
 # generateDataset("testLLLL", 500)
 # testReductionSum()
 # testMatrixMultiplication()
-random.seed(92)
-import time
-st = time.time()
-for i in range(100):
-  testLinspace(2, 2)
-en = time.time()
-print(en - st)
 
+def generateDataset(mode, num_datapoints, instance_id):
+  global receiver
+  labels = [-1]
+  import numpy as np
+  from time import time
+  def flatten(lol):
+    return [i for l in lol for i in l]
+  for i in range(num_datapoints):
+    st = time()
+    choice = random.randint(0,25)
+    labels.append(choice)
+    if choice == 0:
+      testReductionSum(2, 6)
+    elif choice == 1:
+      testReductionProd(2, 6)
+    elif choice == 2:
+      testReductionMax(2, 6)
+    elif choice == 3:
+      testReductionMin(2, 6)
+    elif choice == 4:
+      testReductionMean(2, 6)
+    elif choice == 5:
+      testReductionAll(2, 6)
+    elif choice == 6:
+      testReductionAny(2, 6)
+    elif choice == 7:
+      testAdd(2, 6)
+    elif choice == 8:
+      testSubtract(2, 6)
+    elif choice == 9:
+      testMultiply(2, 6)
+    elif choice == 10:
+      testDivide(2, 6)
+    elif choice == 11:
+      testPower(2, 6)
+    elif choice == 12:
+      testAbs(2, 6)
+    elif choice == 13:
+      testExp(2, 6)
+    elif choice == 14:
+      testSqrt(2, 6)
+    elif choice == 15:
+      testZeros(2, 6)
+    elif choice == 16:
+      testZerosLike(2, 6)
+    elif choice == 17:
+      testOnes(2, 6)
+    elif choice == 18:
+      testOnesLike(2, 6)
+    elif choice == 19:
+      testShape(2, 6)
+    elif choice == 20:
+      testTranspose(2, 6)
+    elif choice == 21:
+      testEye(2, 6)
+    elif choice == 22:
+      testConcatenate(2, 6)
+    elif choice == 23:
+      testDot(2, 6)
+    elif choice == 24:
+      testLinspace(2, 2)
+    elif choice == 25:
+      testArange(2, 2)
+    else:
+      assert False, "Unexpected choice"
+    en = time()
+    print(en-st)
+    _, times = receiver.receiverData
+    print(times)
+  (allNodeDetails, allEdgeDetails, nodeEdgeCounts), times = receiver.receiverData
+  allNodeDetails = np.asarray(flatten(allNodeDetails))
+  allEdgeDetails = np.asarray(flatten(allEdgeDetails))
+  nodeEdgeCounts = np.concatenate([np.asarray(nodeEdgeCounts), np.expand_dims(np.asarray(labels), axis=1)], axis=1)
+
+  np.save("%s/%s/nodes%s.npy"%(mode, instance_id, mode), allNodeDetails)
+  np.save("%s/%s/edges%s.npy"%(mode, instance_id, mode), allEdgeDetails)
+  np.save("%s/%s/index%s.npy"%(mode, instance_id, mode), nodeEdgeCounts)
+  # np.save("/usr/local/lib/python3.9/site-packages/jraph/nodes%s.npy"%mode, allNodeDetails)
+  # np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
+  # np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
+  receiver.clear_cumulative_data()
+
+instance_id = int(input())
+num_graphs = int(input())
+mode = input()
+
+print(instance_id, mode.__hash__())
+random.seed(instance_id + mode.__hash__())
+
+if not os.path.exists("%s/%s"%(mode, instance_id)):
+    os.makedirs("%s/%s"%(mode, instance_id))
+
+generateDataset(mode, num_graphs, instance_id)
+
+# random.seed(92)
+# import time
+# st = time.time()
+# for i in range(1):
+#   testSqrt(2, 6)
+# en = time.time()
+# print(en - st)
 patcher.uninstall()
 
 # allNodeDetails, allEdgeDetails, nodeEdgeCounts = receiver.receiverData

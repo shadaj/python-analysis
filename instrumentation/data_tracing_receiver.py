@@ -6,6 +6,7 @@ from bytecode import Bytecode
 from bytecode.instr import Compare
 import inspect
 from time import time
+import math
 
 from networkx.algorithms.operators import unary
 
@@ -71,6 +72,7 @@ class DataTracingReceiver(EventReceiver):
   timetaken: List[float]
   set_methods: Set[HeapElement]
   first_frame: Optional[FrameType]
+  prev_op: str
 
   def reset_receiver(self) -> None:
     self.function_call_stack = []
@@ -90,6 +92,8 @@ class DataTracingReceiver(EventReceiver):
     self.timetaken = [0.0 for i in self.timetaken]
     self.set_methods = set()
     self.first_frame = None
+    self.prev_op = ""
+    set_current_heap_object_tracker(self.heap_object_tracking)
 
   def __init__(self) -> None:
     self.function_call_stack = []
@@ -109,11 +113,14 @@ class DataTracingReceiver(EventReceiver):
     self.timetaken = [0.0, 0.0]
     self.set_methods = set()
     self.first_frame = None
+    self.prev_op = ""
+    set_current_heap_object_tracker(self.heap_object_tracking)
     super().__init__()
 
   def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
     super().__exit__(exc_type, exc_val, exc_tb)
     self.receiverData = generate_memory_graph(), self.timetaken
+    set_current_heap_object_tracker(None)
 
   def clear_cumulative_data(self) -> None:
     clear_cumulative_graph_data()
@@ -213,7 +220,11 @@ class DataTracingReceiver(EventReceiver):
             if local in parameters:
               try:
                 if not parameters[local].default == value:
-                  set_input(self.frame_variables[cur_frame][local])
+                  if parameters[local].kind == inspect.Parameter.VAR_POSITIONAL:
+                    for el in self.frame_variables[cur_frame][local].heap_elem.collection_heap_elems:
+                      set_input(el)
+                  else:
+                    set_input(self.frame_variables[cur_frame][local])
               except:
                 pass
 
@@ -317,6 +328,9 @@ class DataTracingReceiver(EventReceiver):
                 args_mapping[arg.name] = [symbolic_stack_args[i]]
               else:
                 args_mapping[arg.name].append(symbolic_stack_args[i])
+        else:
+          for i, el in enumerate(symbolic_stack_args):
+            args_mapping[i] = el
             
         if hasattr(function_args_id_stack[0], "metadata"):
           closure_dict = function_args_id_stack[0].metadata
@@ -353,6 +367,11 @@ class DataTracingReceiver(EventReceiver):
           else: # Generic function
             return_value_heap = getHeapElement(stack[0],self.heap_object_tracking)
             return_value_stack_el = StackElement(return_value_heap)
+            parents = []
+            for el in pre_op_stack_last_element.arg_mapping.values():
+              parents.append(el)
+            if len(parents) > 0:
+              add_dependencyN(frameId, return_value_stack_el, parents, str(len(parents)) + (self.heap_object_tracking.get_by_id(called_function.object_id.id).__name__))
             #StackElementVersion(StackElementFactory.getStackElement(function_ret_stack[0], opcode))
             self.symbolic_stack.append(return_value_stack_el)
           
@@ -373,7 +392,11 @@ class DataTracingReceiver(EventReceiver):
       self.frame_stack.pop()
       # If the first instrumented frame returns, it means the value on stack corresponds to the output of the entire program
       if cur_frame == self.first_frame:
-        set_output(self.symbolic_stack[-1])
+        if self.prev_op == "BUILD_TUPLE":
+          for el in self.symbolic_stack[-1].heap_elem.collection_heap_elems:
+            set_output(el)
+        else:
+          set_output(self.symbolic_stack[-1])
       # if there is no frame on the stack, then we are at the top level, so we don't drop the return value
       if len(self.frame_stack) > 0:
         if not self.frame_stack[-1] == cur_frame.f_back:
@@ -437,17 +460,25 @@ class DataTracingReceiver(EventReceiver):
       elif opname[opcode] == "LOAD_CONST":
         assert is_post
         assert len(stack) == 1, "Only one const loaded at a time"
-        self.symbolic_stack.append(StackElement(object_id_stack[0]))
+        newStackElement = StackElement(object_id_stack[0])
+        newStackElement.set_const()
+        self.symbolic_stack.append(newStackElement)
         # NO REAL NEED FOR A NAME HERE AS IT IS JUST A CONST
       elif opname[opcode] == "LOAD_GLOBAL":
         # TODO(shadaj): implement correctly
+        
         assert is_post
         if arg not in self.global_variables:
           self.global_variables[arg] = SymbolicElement("\'%s"%(arg), object_id_stack[0])
         assert isinstance(self.global_variables[arg], SymbolicElement), "Type mismatch"
         stackVal = StackElement(self.global_variables[arg])
         self.symbolic_stack.append(stackVal)
-        add_dependency(frameId, stackVal, self.global_variables[arg])
+        if stack[0] == math.inf or stack[0] == math.e or stack[0] == math.tau or stack[0] == math.pi or stack[0] == math.nan:
+          stackVal.set_const()
+        # StackElement has been freshly created from SymbolicElement, so the heapelem will be there
+        # To ensure the const fact gets propagated, we set_const above, and do not use updating
+        # function because the old value overwrites the new facts in add_dependency()
+        add_dependency_nonupdating(frameId, stackVal, self.global_variables[arg])
       elif opname[opcode] == "LOAD_METHOD":
         assert is_post
         if len(stack) == 1:   # Not an object method, Stack looks like nullptr | callable. 
@@ -748,6 +779,7 @@ class DataTracingReceiver(EventReceiver):
       if is_post:
         self.check_symbolic_stack(object_id_stack, opcode)
     self.already_in_receiver = False
+    self.prev_op = opname[opcode] if opcode != "JUMP_TARGET" else self.prev_op 
 
   def check_symbolic_stack(self, object_id_stack: List[Any], opcode: int) -> None:
     
