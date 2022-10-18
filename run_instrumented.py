@@ -3,6 +3,7 @@ from re import L
 from textwrap import dedent
 from dis import opname
 
+import sys
 from numpy import dtype
 
 from instrumentation.stack_tracking_receiver import StackTrackingReceiver
@@ -670,9 +671,9 @@ def generateDataset(mode, num_datapoints, instance_id):
   # np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
   receiver.clear_cumulative_data()
 
-instance_id = int(input())
-num_graphs = int(input())
-mode = input()
+_, instance_id, num_graphs, mode = sys.argv
+instance_id = int(instance_id)
+num_graphs = int(num_graphs)
 
 print(instance_id, mode.__hash__())
 random.seed(instance_id + mode.__hash__())
