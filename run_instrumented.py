@@ -11,6 +11,9 @@ from instrumentation.data_tracing_receiver import DataTracingReceiver
 from instrumentation.module_loader import PatchingPathFinder
 from instrumentation.exec import exec_instrumented
 
+import sys
+sys.path.append("/home/aayan/Desktop/Research")
+
 patcher = PatchingPathFinder()
 patcher.install()
 
