@@ -596,62 +596,78 @@ def generateDataset(mode, num_datapoints, instance_id):
   from time import time
   def flatten(lol):
     return [i for l in lol for i in l]
+  def get_sizes(mode, choice):
+    if mode == "train":
+      if choice >= 24:
+        return (2, 2)
+      else:
+        return (2, 6)
+    elif mode == "test":
+      if choice >= 24:
+        return (2, 2)
+      else:
+        return (2, 6)
+    elif mode == "testL":
+      if choice >= 24:
+        return (3, 3)
+      else:
+        return (3, 7)
   for i in range(num_datapoints):
     st = time()
     choice = random.randint(0,25)
     labels.append(choice)
     if choice == 0:
-      testReductionSum(2, 6)
+      testReductionSum(*get_sizes(mode, choice))
     elif choice == 1:
-      testReductionProd(2, 6)
+      testReductionProd(*get_sizes(mode, choice))
     elif choice == 2:
-      testReductionMax(2, 6)
+      testReductionMax(*get_sizes(mode, choice))
     elif choice == 3:
-      testReductionMin(2, 6)
+      testReductionMin(*get_sizes(mode, choice))
     elif choice == 4:
-      testReductionMean(2, 6)
+      testReductionMean(*get_sizes(mode, choice))
     elif choice == 5:
-      testReductionAll(2, 6)
+      testReductionAll(*get_sizes(mode, choice))
     elif choice == 6:
-      testReductionAny(2, 6)
+      testReductionAny(*get_sizes(mode, choice))
     elif choice == 7:
-      testAdd(2, 6)
+      testAdd(*get_sizes(mode, choice))
     elif choice == 8:
-      testSubtract(2, 6)
+      testSubtract(*get_sizes(mode, choice))
     elif choice == 9:
-      testMultiply(2, 6)
+      testMultiply(*get_sizes(mode, choice))
     elif choice == 10:
-      testDivide(2, 6)
+      testDivide(*get_sizes(mode, choice))
     elif choice == 11:
-      testPower(2, 6)
+      testPower(*get_sizes(mode, choice))
     elif choice == 12:
-      testAbs(2, 6)
+      testAbs(*get_sizes(mode, choice))
     elif choice == 13:
-      testExp(2, 6)
+      testExp(*get_sizes(mode, choice))
     elif choice == 14:
-      testSqrt(2, 6)
+      testSqrt(*get_sizes(mode, choice))
     elif choice == 15:
-      testZeros(2, 6)
+      testZeros(*get_sizes(mode, choice))
     elif choice == 16:
-      testZerosLike(2, 6)
+      testZerosLike(*get_sizes(mode, choice))
     elif choice == 17:
-      testOnes(2, 6)
+      testOnes(*get_sizes(mode, choice))
     elif choice == 18:
-      testOnesLike(2, 6)
+      testOnesLike(*get_sizes(mode, choice))
     elif choice == 19:
-      testShape(2, 6)
+      testShape(*get_sizes(mode, choice))
     elif choice == 20:
-      testTranspose(2, 6)
+      testTranspose(*get_sizes(mode, choice))
     elif choice == 21:
-      testEye(2, 6)
+      testEye(*get_sizes(mode, choice))
     elif choice == 22:
-      testConcatenate(2, 6)
+      testConcatenate(*get_sizes(mode, choice))
     elif choice == 23:
-      testDot(2, 6)
+      testDot(*get_sizes(mode, choice))
     elif choice == 24:
-      testLinspace(2, 2)
+      testLinspace(*get_sizes(mode, choice))
     elif choice == 25:
-      testArange(2, 2)
+      testArange(*get_sizes(mode, choice))
     else:
       assert False, "Unexpected choice"
     en = time()
