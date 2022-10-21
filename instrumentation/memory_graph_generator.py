@@ -159,7 +159,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
   oldChildVersion = variableToLatestVersion.get(child.var_name, None)
   variableToLatestVersion[child.var_name] = child.version
 
-  if cnst_val := get_const_number_instance(child) is not None:
+  if (cnst_val := get_const_number_instance(child)) is not None:
     G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact, const_val = cnst_val)
   else:
     G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact)
@@ -178,7 +178,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     parent = dep[1]
     parentStr = element_to_str(parent)
     if parentStr not in G:
-      if cnst_val := get_const_number_instance(parent) is not None:
+      if (cnst_val := get_const_number_instance(parent)) is not None:
         G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId, op = None, fact = None, const_val = cnst_val)
       else:
         G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId, op = None, fact = None)
@@ -289,6 +289,7 @@ def generate_memory_graph():
   
   def cleanGraph(stage):
     global edgeCounter
+    nonlocal relevantNodes
     toRemove = []
     iteration = all_Nodes
     if stage == 2:
@@ -323,6 +324,9 @@ def generate_memory_graph():
           elif len(childs) != 0 or is_output(node):
             continue
         elif stage == 4:
+          if node in relevantNodes:
+            continue
+        elif stage == 5:
           if not (op == "?" and len(childs) == 0): # We remove a ? node where there are no children
             continue
           else:
@@ -389,6 +393,30 @@ def generate_memory_graph():
 
   print(len(G.edges), len(G.nodes))
 
+  print(len(relevantNodes))
+  
+  relevantNodes = []
+  for node in G.nodes:
+    if is_input_or_output(node):
+      relevantNodes.append(node)
+    #if "nameless" in node: #and len([c for c in G.successors(node)]) == 0:
+    #  relevantNodes.append(node)
+
+  visitedQueue = deque(relevantNodes)
+  relevantNodes = set()
+
+  while len(visitedQueue) > 0:
+    element = visitedQueue.popleft()
+    relevantNodes.add(element)
+    nbrs = [p for p in G.predecessors(element)] + [c for c in G.successors(element)]
+    for nbr in nbrs:
+      if nbr not in relevantNodes:
+        visitedQueue.append(nbr)
+
+  cleanGraph(4)
+
+  print(len(G.edges), len(G.nodes))
+
   edgesSum += len(G.edges)
   nodesSum += len(G.nodes)
 
@@ -433,7 +461,9 @@ def generate_memory_graph():
     else:
       pos[key] = (oldXtoNewXcoords[value[0]], value[1])
 
-  cleanGraph(4)
+  print(len(relevantNodes))
+
+  cleanGraph(5)
 
   print(len(G.edges), len(G.nodes))
 
@@ -448,6 +478,10 @@ def generate_memory_graph():
     opToId[v] = i + 1
   default_i = i + 2
   opToId[None] = 0
+
+  # print(binary_ops)
+  # print(unary_ops)
+  # print(opToId)
 
   GsameVariableEdge = nx.get_edge_attributes(G,'sameVariableEdge')
   GfactEdge = {(u, v, k): d.get('fact',"") for u, v, k, d in G.edges(data=True, keys=True)}

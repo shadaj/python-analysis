@@ -706,7 +706,7 @@ generateDataset(mode, num_graphs, instance_id)
 # import time
 # st = time.time()
 # for i in range(1):
-#   testSqrt(2, 6)
+#   testZerosLike(2, 6)
 # en = time.time()
 # print(en - st)
 patcher.uninstall()
