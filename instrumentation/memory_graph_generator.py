@@ -1,8 +1,10 @@
 from calendar import c
+import math
 from statistics import mean
 from typing import Any, Dict, List, Set, Tuple, Union, Optional
 
 from bytecode import Compare
+import numpy as np
 
 from .heap_object_tracking import HeapObjectTracker
 
@@ -129,16 +131,30 @@ def set_current_heap_object_tracker(hot: HeapObjectTracker) -> None:
   global current_heap_object_tracker
   current_heap_object_tracker = hot
 
+def bound_cnst(cnst) -> float:
+  if not cnst == cnst:
+    return 200.0
+  if cnst == math.inf:
+    return 100.0
+  if cnst == -math.inf:
+    return -100.0
+  if cnst > 50 * math.pi:
+    cnst = 50 * math.pi
+  if cnst < -50 * math.pi:
+    cnst = -50 * math.pi
+  cnst = math.sin(cnst / 100) * 100
+  return cnst
+
 def get_const_number_instance(stack_or_heap_element: Union[SymbolicElement, StackElement]) -> Optional[Union[int, float]]:
   global current_heap_object_tracker
   if stack_or_heap_element.is_const:
     if isinstance(cnst := stack_or_heap_element.heap_elem.object_id, (bool, int)):
-      return cnst
+      return bound_cnst(cnst)
     elif isinstance(cnst := stack_or_heap_element.heap_elem.object_id, (str)):
       return None
     else:
       if isinstance(cnst2 := current_heap_object_tracker.get_by_id(cnst.id), (int, float)):
-        return cnst2
+        return bound_cnst(cnst2)
       else:
         return None
   else:
