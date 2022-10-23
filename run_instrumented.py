@@ -615,6 +615,11 @@ def generateDataset(mode, num_datapoints, instance_id):
         return (3, 3)
       else:
         return (3, 7)
+    elif mode == "testLL":
+      if choice >= 24:
+        return (3, 4)
+      else:
+        return (3, 10)
   for i in range(num_datapoints):
     st = time()
     choice = random.randint(0,25)
