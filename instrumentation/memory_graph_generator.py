@@ -213,10 +213,11 @@ def set_output(element: Union[StackElement, SymbolicElement]) -> None:
   outputs.add(element_to_str(element))
   num_outputs += 1
   counter = 1
-  outputMap[element_to_str(element)] = (2, num_outputs, counter)
+  outputMap[element_to_str(element)] = [2, num_outputs, counter]
   for i in element.heap_elem.collection_heap_elems:
     counter = set_output_internal(i, counter)
-  outputMap[element_to_str(element)] /= counter
+  outputMap[element_to_str(element)][2] /= counter
+  outputMap[element_to_str(element)] = tuple(outputMap[element_to_str(element)])
   for i in element.heap_elem.collection_heap_elems:
     normalize_outputs(i, counter)
 
@@ -224,14 +225,15 @@ def set_output_internal(element: Union[StackElement, SymbolicElement], counter: 
   global outputs, outputMap, num_outputs
   outputs.add(element_to_str(element))
   counter += 1
-  outputMap[element_to_str(element)] = (2, num_outputs, counter)
+  outputMap[element_to_str(element)] = [2, num_outputs, counter]
   for i in element.heap_elem.collection_heap_elems:
     counter = set_output_internal(i, counter)
   return counter
 
 def normalize_outputs(element: Union[StackElement, SymbolicElement], normalizer: int) -> None:
   global outputMap
-  outputMap[element_to_str(element)] /= normalizer
+  outputMap[element_to_str(element)][2] /= normalizer
+  outputMap[element_to_str(element)] = tuple(outputMap[element_to_str(element)])
   for i in element.heap_elem.collection_heap_elems:
     normalize_outputs(i, normalizer)
 
@@ -240,10 +242,11 @@ def set_input(element: Union[StackElement, SymbolicElement]) -> None:
   inputs.add(element_to_str(element))
   num_inputs += 1
   counter = 1
-  inputMap[element_to_str(element)] = (1, num_inputs, counter)
+  inputMap[element_to_str(element)] = [1, num_inputs, counter]
   for i in element.heap_elem.collection_heap_elems:
     counter = set_input_internal(i, counter)
-  inputMap[element_to_str(element)] /= counter
+  inputMap[element_to_str(element)][2] /= counter
+  inputMap[element_to_str(element)] = tuple(inputMap[element_to_str(element)])
   for i in element.heap_elem.collection_heap_elems:
     normalize_inputs(i, counter)
 
@@ -251,7 +254,7 @@ def set_input_internal(element: Union[StackElement, SymbolicElement], counter: i
   global inputs, inputMap, num_inputs
   inputs.add(element_to_str(element))
   counter += 1
-  inputMap[element_to_str(element)] = (1, num_inputs, counter)
+  inputMap[element_to_str(element)] = [1, num_inputs, counter]
   for i in element.heap_elem.collection_heap_elems:
     counter = set_input_internal(i, counter)
   return counter
