@@ -261,7 +261,8 @@ def set_input_internal(element: Union[StackElement, SymbolicElement], counter: i
 
 def normalize_inputs(element: Union[StackElement, SymbolicElement], normalizer: int) -> None:
   global inputMap
-  inputMap[element_to_str(element)] /= normalizer
+  inputMap[element_to_str(element)][2] /= normalizer
+  inputMap[element_to_str(element)] = tuple(inputMap[element_to_str(element)])
   for i in element.heap_elem.collection_heap_elems:
     normalize_inputs(i, normalizer)
 
