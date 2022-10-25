@@ -216,6 +216,9 @@ def set_output(element: Union[StackElement, SymbolicElement]) -> None:
   outputMap[element_to_str(element)] = (2, num_outputs, counter)
   for i in element.heap_elem.collection_heap_elems:
     counter = set_output_internal(i, counter)
+  outputMap[element_to_str(element)] /= counter
+  for i in element.heap_elem.collection_heap_elems:
+    normalize_outputs(i, counter)
 
 def set_output_internal(element: Union[StackElement, SymbolicElement], counter: int) -> int:
   global outputs, outputMap, num_outputs
@@ -226,6 +229,12 @@ def set_output_internal(element: Union[StackElement, SymbolicElement], counter: 
     counter = set_output_internal(i, counter)
   return counter
 
+def normalize_outputs(element: Union[StackElement, SymbolicElement], normalizer: int) -> None:
+  global outputMap
+  outputMap[element_to_str(element)] /= normalizer
+  for i in element.heap_elem.collection_heap_elems:
+    normalize_outputs(i, normalizer)
+
 def set_input(element: Union[StackElement, SymbolicElement]) -> None:
   global inputs, inputMap, num_inputs
   inputs.add(element_to_str(element))
@@ -234,6 +243,9 @@ def set_input(element: Union[StackElement, SymbolicElement]) -> None:
   inputMap[element_to_str(element)] = (1, num_inputs, counter)
   for i in element.heap_elem.collection_heap_elems:
     counter = set_input_internal(i, counter)
+  inputMap[element_to_str(element)] /= counter
+  for i in element.heap_elem.collection_heap_elems:
+    normalize_inputs(i, counter)
 
 def set_input_internal(element: Union[StackElement, SymbolicElement], counter: int) -> int:
   global inputs, inputMap, num_inputs
@@ -244,6 +256,11 @@ def set_input_internal(element: Union[StackElement, SymbolicElement], counter: i
     counter = set_input_internal(i, counter)
   return counter
 
+def normalize_inputs(element: Union[StackElement, SymbolicElement], normalizer: int) -> None:
+  global inputMap
+  inputMap[element_to_str(element)] /= normalizer
+  for i in element.heap_elem.collection_heap_elems:
+    normalize_inputs(i, normalizer)
 
 def is_input_or_output(nodeStr: str) -> bool:
   global inputs, outputs
