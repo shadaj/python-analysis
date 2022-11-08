@@ -567,16 +567,24 @@ class DataTracingReceiver(EventReceiver):
         add_dependency(frameId, symbVal, appendedStackElement)
       elif opname[opcode] == "GET_ITER":
         assert is_post
-        self.symbolic_stack.pop() #Popping the original collection from symbolic stack
+        orig_collection = self.symbolic_stack.pop() #Popping the original collection from symbolic stack
         iteratorHeapValue = object_id_stack[0]
         iteratorStackElement = StackElement(iteratorHeapValue)
+        iteratorStackElement.heap_elem.collection_heap_elems = iter(orig_collection.heap_elem.collection_heap_elems)
         self.symbolic_stack.append(iteratorStackElement)
       elif opname[opcode] == "FOR_ITER":
         if not is_post:
           self.pre_instrument_state_for_iter = True
         else:
-          iterateHeapValue = object_id_stack[-1]
-          iterateStackElement = StackElement(iterateHeapValue)
+          iteratorStackElement = self.symbolic_stack[-1]
+          try:
+            # THIS MAY BE PRESENT WHEN WE ITERATE ACROSS A COLLECTION (for i in list)
+            iterateSymbolicValue = iteratorStackElement.heap_elem.collection_heap_elems.__next__()
+            iterateStackElement = StackElement(iterateSymbolicValue)
+            add_dependency(frameId, iterateStackElement, iterateSymbolicValue)
+          except:
+            iterateHeapValue = object_id_stack[-1]
+            iterateStackElement = StackElement(iterateHeapValue)
           self.symbolic_stack.append(iterateStackElement)
           # See GET_ITER notes
       elif opname[opcode] == "BUILD_LIST" or opname[opcode] == "BUILD_SLICE" or opname[opcode] == "BUILD_TUPLE":
@@ -728,11 +736,16 @@ class DataTracingReceiver(EventReceiver):
           # TODO: Update Unary_ops too if changed
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
-          if opname[opcode] == "COMPARE_OP":
-            add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]], arg if stackEl.heap_elem.object_id else negCompare(arg))
+          if isinstance(stack[-1], list) and opname[opcode] == "BINARY_ADD":
+            inp_coll = cur_inputs[0].heap_elem.collection_heap_elems + cur_inputs[1].heap_elem.collection_heap_elems
+            for i in range(len(inp_coll)):
+              add_dependency_nonupdating(frameId, stackEl.heap_elem.collection_heap_elems[i], inp_coll[i])
           else:
-            add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]])
-          #   add_relation(stackEl.heap_elem.object_id, cur_inputs[1], cur_inputs[0], str(arg))
+            if opname[opcode] == "COMPARE_OP":
+              add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]], arg if stackEl.heap_elem.object_id else negCompare(arg))
+            else:
+              add_dependency2(frameId, stackEl, cur_inputs[0], cur_inputs[1], binary_ops[opname[opcode]])
+            #   add_relation(stackEl.heap_elem.object_id, cur_inputs[1], cur_inputs[0], str(arg))
           
       elif opname[opcode] in unary_ops:
         if not is_post:

@@ -10,9 +10,11 @@ from instrumentation.stack_tracking_receiver import StackTrackingReceiver
 from instrumentation.data_tracing_receiver import DataTracingReceiver
 from instrumentation.module_loader import PatchingPathFinder
 from instrumentation.exec import exec_instrumented
+from instrumentation.predict import evaluate, get_graph_test
 
 import sys
 sys.path.append("/home/aayan/Desktop/Research")
+sys.path.append("/Users/aayan/Desktop/Research")
 
 patcher = PatchingPathFinder()
 patcher.install()
@@ -592,6 +594,35 @@ def generateDataset(mode, num_datapoints):
 # testReductionSum()
 # testMatrixMultiplication()
 
+IntToClassMapping = {
+  0: "Sum",
+  1: "Prod",
+  2: "Max",
+  3: "Min",
+  4: "Mean",
+  5: "All",
+  6: "Any",
+  7: "Add",
+  8: "Subtract",
+  9: "Multiply",
+  10: "Divide",
+  11: "Power",
+  12: "Abs",
+  13: "Exp",
+  14: "Sqrt",
+  15: "Zeros",
+  16: "ZerosLike",
+  17: "Ones",
+  18: "OnesLike",
+  19: "Shape",
+  20: "Transpose",
+  21: "Eye",
+  22: "Concatenate",
+  23: "Dot",
+  24: "Linspace",
+  25: "Arange",
+}
+
 def generateDataset(mode, num_datapoints, instance_id):
   global receiver
   labels = [-1]
@@ -710,15 +741,44 @@ random.seed(instance_id + mode.__hash__())
 if not os.path.exists("%s/%s"%(mode, instance_id)):
     os.makedirs("%s/%s"%(mode, instance_id))
 
-generateDataset(mode, num_graphs, instance_id)
+# generateDataset(mode, num_graphs, instance_id)
+
+def predict():
+  global receiver
+  import numpy as np
+  (allNodeDetails, allEdgeDetails, nodeEdgeCounts), times = receiver.receiverData
+  def flatten(lol):
+    return [i for l in lol for i in l]
+  allNodeDetails = np.asarray(flatten(allNodeDetails))
+  allEdgeDetails = np.reshape(np.asarray(flatten(allEdgeDetails)), (-1, 4))
+  labels = [-1, -1]
+  nodeEdgeCounts = np.concatenate([np.asarray(nodeEdgeCounts), np.expand_dims(np.asarray(labels), axis=1)], axis=1)
+  patcher.uninstall()
+  print("GNN Predicts this as: ", IntToClassMapping[evaluate(allNodeDetails, allEdgeDetails, nodeEdgeCounts)])
+  patcher.install()
+
+
+def testWildImpl():
+  import Datasets.Wild.transpose as totest
+  a = [[3,4,-2,-5,3], [4,5,6,6,7]]
+  # b = 
+  # a = 1
+  # b = 20
+  # c = 5
+  with receiver:
+    ans = totest.func1(a)
+  print("ans: ", ans)
+  
+
 
 # random.seed(92)
-# import time
-# st = time.time()
-# for i in range(1):
-#   testZerosLike(2, 6)
-# en = time.time()
-# print(en - st)
+import time
+st = time.time()
+for i in range(1):
+  testWildImpl()
+  predict()
+en = time.time()
+print(en - st)
 patcher.uninstall()
 
 # allNodeDetails, allEdgeDetails, nodeEdgeCounts = receiver.receiverData
