@@ -80,7 +80,9 @@ def compute_loss(params, graph, label, net):
   """Computes loss."""
   global num_classes
   pred_graph = net.apply(params, graph)
+
   preds = jax.nn.log_softmax(pred_graph.globals, axis=1)
+  print(jax.nn.softmax(pred_graph.globals, axis=1))
   return jnp.argmax(preds, axis=1)[0]
 
 

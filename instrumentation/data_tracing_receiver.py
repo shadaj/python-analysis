@@ -370,8 +370,10 @@ class DataTracingReceiver(EventReceiver):
             parents = []
             for el in pre_op_stack_last_element.arg_mapping.values():
               parents.append(el)
-            if len(parents) > 0:
-              add_dependencyN(frameId, return_value_stack_el, parents, str(len(parents)) + (self.heap_object_tracking.get_by_id(called_function.object_id.id).__name__))
+            conc_func_obj = self.heap_object_tracking.get_by_id(called_function.object_id.id)
+            if conc_func_obj == bool:
+              if len(parents) > 0:
+                add_dependencyN(frameId, return_value_stack_el, parents, str(len(parents)) + (conc_func_obj.__name__))
             #StackElementVersion(StackElementFactory.getStackElement(function_ret_stack[0], opcode))
             self.symbolic_stack.append(return_value_stack_el)
           
@@ -653,6 +655,7 @@ class DataTracingReceiver(EventReceiver):
               stackElem = StackElement(nameless_symbolic_element)
               self.symbolic_stack.append(stackElem)
               add_dependency(frameId, stackElem, nameless_symbolic_element)
+              # trying out index depeendencies add_dependency_nonupdating(frameId, stackElem, index)
             else:
               index_reified = self.heap_object_tracking.get_by_id(index.heap_elem.object_id.id)
               nameless_symbolic_elements = collection.heap_elem.collection_heap_elems[index_reified]
@@ -736,7 +739,7 @@ class DataTracingReceiver(EventReceiver):
           # TODO: Update Unary_ops too if changed
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
-          if isinstance(stack[-1], list) and opname[opcode] == "BINARY_ADD":
+          if isinstance(stack[-1], list) and (opname[opcode] == "BINARY_ADD" or opname[opcode] == "INPLACE_ADD"):
             inp_coll = cur_inputs[0].heap_elem.collection_heap_elems + cur_inputs[1].heap_elem.collection_heap_elems
             for i in range(len(inp_coll)):
               add_dependency_nonupdating(frameId, stackEl.heap_elem.collection_heap_elems[i], inp_coll[i])

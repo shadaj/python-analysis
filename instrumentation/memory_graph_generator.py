@@ -190,7 +190,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
 
   allObservedPositions.add(child.var_name)
 
-  for dep in depList:
+  for dep_i, dep in enumerate(depList):
     parent = dep[1]
     parentStr = element_to_str(parent)
     if parentStr not in G:
@@ -201,7 +201,17 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     edgeCounter += 1
     param = len(G.get_edge_data(parentStr, childStr, default={}))
     edgeMap[(parentStr, childStr, param)] = edgeCounter
-    G.add_edge(parentStr, childStr, sameVariableEdge = False)
+    cnst_val = get_const_number_instance(parent)
+    if operation == "2+" and cnst_val == bound_cnst(0):
+      pass
+    elif operation == "2*" and cnst_val == bound_cnst(1):
+      pass
+    elif (operation == "2/" or operation == "2//") and cnst_val == bound_cnst(1) and dep_i == 1:
+      pass
+    elif operation == "2?" and (cnst_val == bound_cnst(math.inf) or cnst_val == bound_cnst(-math.inf)):
+      pass
+    else:
+      G.add_edge(parentStr, childStr, sameVariableEdge = False)
     # assert nx.is_directed_acyclic_graph(G)
 
     variableToLatestVersion[parent.var_name] = parent.version
@@ -349,21 +359,21 @@ def generate_memory_graph():
           op = None
           arity = None
         const = GnodeToConstVal.get(node, None)
-        if stage == 1:
+        if stage == 1 or stage == 3:
           if ((operation is not None) or (const is not None and len(childOp) > 0)) and node in relevantNodes:
             continue
         elif stage == 2:
           if not (operation is not None and len(parents) < arity):
             continue
-        elif stage == 3:
+        elif stage == 4:
           if op == "?":
             continue
           elif len(childs) != 0 or is_output(node):
             continue
-        elif stage == 4:
+        elif stage == 5:
           if node in relevantNodes:
             continue
-        elif stage == 5:
+        elif stage == 6:
           if not (op == "?" and len(childs) == 0): # We remove a ? node where there are no children
             continue
           else:
@@ -430,6 +440,10 @@ def generate_memory_graph():
 
   print(len(G.edges), len(G.nodes))
 
+  cleanGraph(4)
+
+  print(len(G.edges), len(G.nodes))
+
   print(len(relevantNodes))
   
   relevantNodes = []
@@ -450,7 +464,7 @@ def generate_memory_graph():
       if nbr not in relevantNodes:
         visitedQueue.append(nbr)
 
-  cleanGraph(4)
+  cleanGraph(5)
 
   print(len(G.edges), len(G.nodes))
 
@@ -500,7 +514,7 @@ def generate_memory_graph():
 
   print(len(relevantNodes))
 
-  cleanGraph(5)
+  cleanGraph(6)
 
   print(len(G.edges), len(G.nodes))
 
