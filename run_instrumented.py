@@ -737,14 +737,105 @@ def testEye(dims, dim_size_max):
     ans = eye.eye_1(N, M, k)
   print("eye: ", ans)
 
+def testDiag(dims, dim_size_max):
+  import numpy as np
+  import APIs.diag as diag
+  dim_size_max_2 = (dims * dim_size_max) // 2
+  size, v, _, _ = get_random_init_complex_reduction(2, dim_size_max_2)
+  k = np.random.choice(dim_size_max_2)
+  print(v, size)
+  print(k)
+  with receiver:
+    ans = diag.diag_1(v, k)
+  print("diag: ", ans)
 
+def testFull(dims, dim_size_max):
+  import numpy as np
+  import APIs.full as full
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  val = np.random.choice(dim_size_max)
+  print(size)
+  print(val)
+  with receiver:
+    ans = full.full_1(size, val)
+  print("full: ", ans)
 
+### INVOLVE SORTING
 
+def testSort(dims, dim_size_max):
+  import numpy as np
+  import APIs.sort as sort
+  size, a, axis, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  print(a, size)
+  print(axis)
+  with receiver:
+    ans = sort.sort_1(a, axis)
+  print("sort: ", ans)
 
+def testArgSort(dims, dim_size_max):
+  import numpy as np
+  import APIs.argsort as argsort
+  size, a, axis, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  print(a, size)
+  print(axis)
+  with receiver:
+    ans = argsort.argsort_1(a, axis)
+  print("argsort: ", ans)
 
+def testPercentile(dims, dim_size_max):
+  import numpy as np
+  import APIs.percentile as percentile
+  size, a, axis, keepdims = get_random_init_complex_reduction(dims, dim_size_max)
+  per = np.random.choice([25, 75, 5, 95])
+  print(a, size)
+  print(per)
+  print(axis)
+  print(keepdims)
+  with receiver:
+    ans = percentile.percentile_1(a, per, axis, keepdims)
+  print("percentile", ans)
 
+def testMedian(dims, dim_size_max):
+  import numpy as np
+  import APIs.median as median
+  size, a, axis, keepdims = get_random_init_complex_reduction(dims, dim_size_max)
+  print(a, size)
+  print(axis)
+  print(keepdims)
+  with receiver:
+    ans = median.median_1(a, axis, keepdims)
+  print("median: ", ans)
 
+def testUnique(dims, dim_size_max):
+  import numpy as np
+  import APIs.unique as unique
+  size, a, _, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  print(a, size)
+  with receiver:
+    ans = unique.unique_1(a)
+  print("unique: ", ans)
 
+def testSearchsorted(dims, dim_size_max):
+  import numpy as np
+  import APIs.searchsorted as searchsorted
+  size_a, a, _, _ = get_random_init_complex_reduction(1, dims * dim_size_max)
+  size_v, v, _, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  print(a, size_a)
+  print(v, size_v)
+  with receiver:
+    ans = searchsorted.searchsorted_1(a, v)
+  print("searchsorted", ans)
+
+def testTake(dims, dim_size_max):
+  import numpy as np
+  import APIs.take as take
+  size_a, a, axis, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  size_i, i, _, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  print(a, size_a)
+  print(i, size_i)
+  with receiver:
+    ans = take.take_1(a, i, axis)
+  print("take: ", ans)
 
 
 def generateDataset(mode, num_datapoints):
