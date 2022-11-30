@@ -193,6 +193,8 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
   for dep_i, dep in enumerate(depList):
     parent = dep[1]
     parentStr = element_to_str(parent)
+    if parentStr == childStr:
+      continue
     if parentStr not in G:
       if (cnst_val := get_const_number_instance(parent)) is not None:
         G.add_node(parentStr, pos=(parent.var_name, parent.version), frame = frameId, op = None, fact = None, const_val = cnst_val)

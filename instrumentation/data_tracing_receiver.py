@@ -351,6 +351,10 @@ class DataTracingReceiver(EventReceiver):
           toAppendSymbolic = SymbolicElement(currentPrefix%(currentCount), toAppend)
           mainList.heap_elem.collection_heap_elems.append(toAppendSymbolic)
           add_dependency(frameId, toAppendSymbolic, toAppend)
+        elif function_object == list.pop:
+          mainList = symbolic_stack_args[0]
+          mainList.heap_elem.collection_counter -= 1
+          mainList.heap_elem.collection_heap_elems.pop()
       else:
         function_args_id_stack = self.convert_stack_to_heap_id(stack)
         assert len(stack) == 1, "Expect one return value for any function"
@@ -739,7 +743,7 @@ class DataTracingReceiver(EventReceiver):
           # TODO: Update Unary_ops too if changed
           stackEl = StackElement(object_id_stack[0])
           self.symbolic_stack.append(stackEl)
-          if isinstance(stack[-1], list) and (opname[opcode] == "BINARY_ADD" or opname[opcode] == "INPLACE_ADD"):
+          if isinstance(stack[-1], list) or (isinstance(stack[-1], tuple)) and (opname[opcode] == "BINARY_ADD" or opname[opcode] == "INPLACE_ADD"):
             inp_coll = cur_inputs[0].heap_elem.collection_heap_elems + cur_inputs[1].heap_elem.collection_heap_elems
             for i in range(len(inp_coll)):
               add_dependency_nonupdating(frameId, stackEl.heap_elem.collection_heap_elems[i], inp_coll[i])
