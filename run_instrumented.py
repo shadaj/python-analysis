@@ -1162,7 +1162,7 @@ random.seed(instance_id + mode.__hash__())
 if not os.path.exists("%s/%s"%(mode, instance_id)):
     os.makedirs("%s/%s"%(mode, instance_id))
 
-# generateDataset(mode, num_graphs, instance_id)
+generateDataset(mode, num_graphs, instance_id)
 
 def predict():
   global receiver
@@ -1197,17 +1197,18 @@ def testWildImpl():
 # plt.hist([i[0] for i in shapes1 if len(i) == 1])
 # plt.show()
 # random.seed(92)
-import time
-st = time.time()
-import numpy as np
-for i in range(100):
-  # testWildImpl()
-  # testMergeSort()
-  trace = np.random.choice([True, False])
-  print("trace: ", trace)
-  receiver.set_trace_comparisions(trace)
-  testTake(3, 3)
-  # predict()
-en = time.time()
-print(en - st)
+
+# import time
+# st = time.time()
+# import numpy as np
+# for i in range(100):
+#   # testWildImpl()
+#   # testMergeSort()
+#   trace = np.random.choice([True, False])
+#   print("trace: ", trace)
+#   receiver.set_trace_comparisions(trace)
+#   testTake(3, 3)
+#   # predict()
+# en = time.time()
+# print(en - st)
 patcher.uninstall()
