@@ -201,6 +201,23 @@ def get_broadcast_compatible_shape(original, max_dim):
     new_shape.append(np.random.randint(1, max_dim + 1))
   return new_shape[::-1]
 
+def get_broadcast_compatible_shape_small(original, max_dim):
+  import numpy as np
+  if np.random.randint(0, 2):
+    return original
+  new_shape = []
+  for i in original[::-1]:
+    if i == 1:
+      new_shape.append(i)
+    else:
+      if np.random.randint(0, 2):
+        new_shape.append(1)
+      else:
+        new_shape.append(i)
+    if np.random.randint(0, 2):
+      return new_shape[::-1]
+  return new_shape[::-1]
+
 def get_random_init(dims, dim_size_max):
   import numpy as np
   size_a = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
@@ -230,12 +247,15 @@ def get_random_init_element_wise_3(dims, dim_size_max):
 def get_random_init_reduction(dims, dim_size_max):
   import numpy as np
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_where = get_broadcast_compatible_shape(size, dim_size_max)
+  size_where = get_broadcast_compatible_shape_small(size, dim_size_max)
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
-  axis = np.random.choice([None, np.random.choice(len(size), size=np.random.choice(len(size)), replace=False).tolist()]) 
+  if len(size) == 1:
+    axis = None
+  else:
+    axis = np.random.choice([None, np.random.choice(len(size), size=np.random.randint(1, len(size)), replace=False).tolist()]) 
   keepdims = np.random.choice([None, True])
   initial = np.random.choice([None, 1])
-  where = np.random.choice([None, np.random.choice([True, False], size=size_where).tolist()])
+  where = np.random.choice([None, np.random.choice([True, False], p=[0.8, 0.2], size=size_where).tolist()])
   return size, size_where, a, axis, keepdims, initial, where
 
 def get_random_init_complex_reduction(dims, dim_size_max):
@@ -318,6 +338,7 @@ def testReductionAll(dims, dim_size_max):
   import numpy as np
   import APIs.all as all
   size, size_where, a, axis, keepdims, _, where = get_random_init_reduction(dims, dim_size_max)
+  a = np.asarray(a).astype(int).tolist()
   print(a, size)
   print(axis)
   print(keepdims)
@@ -330,6 +351,7 @@ def testReductionAny(dims, dim_size_max):
   import numpy as np
   import APIs.any as any
   size, size_where, a, axis, keepdims, _, where = get_random_init_reduction(dims, dim_size_max)
+  a = np.asarray(a).astype(int).tolist()
   print(a, size)
   print(axis)
   print(keepdims)
@@ -376,7 +398,8 @@ def testAdd(dims, dim_size_max):
 def testWhere(dims, dim_size_max):
   import numpy as np
   import APIs.where as where
-  size_a, size_b, size_c, a, b, c = get_random_init_element_wise_3(dims, dim_size_max)
+  size_a, size_b, size_c, _, b, c = get_random_init_element_wise_3(dims, dim_size_max)
+  a = np.random.choice([0, 1], size=size_a).tolist()
   print(a, size_a)
   print(b, size_b)
   print(c, size_c)
@@ -485,8 +508,13 @@ def testDiff(dims, dim_size_max):
   import APIs.diff as diff
   size, a, _, _ = get_random_init_complex_reduction(dims, dim_size_max)
   axis = np.random.choice(len(size))
-  n = np.random.choice([1,2])
+  if size[axis] > 2:
+    n = np.random.choice([1,2])
+  else:
+    n = 1
   print(a, size)
+  print(axis)
+  print(n)
   with receiver:
     ans = diff.diff_1(a, n, axis)
   print("diff: ", ans)
@@ -494,10 +522,11 @@ def testDiff(dims, dim_size_max):
 def testArange(dims, dim_size_max):
   import numpy as np
   import APIs.arange as arange
-  start = np.random.randint(dim_size_max * 20)
-  stop = np.random.choice([None, np.random.randint(dim_size_max * 10)])
+  start = np.random.randint(dim_size_max * 5)
+  stop = np.random.choice([None, np.random.randint(dim_size_max * 5)])
   stop = stop + start if stop is not None else None
-  step = np.random.choice([None] + [i for i in range(1, dim_size_max)] + [i for i in range(-dim_size_max, 0)])
+  
+  step = np.random.choice([None] + [i for i in range(1, dim_size_max)])
   print(start)
   print(stop)
   print(step)
@@ -509,7 +538,7 @@ def testLinspace(dims, dim_size_max):
   import numpy as np
   import APIs.linspace as linspace
   size_start = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  size_stop = get_broadcast_compatible_shape(size_start, dim_size_max)
+  size_stop = get_broadcast_compatible_shape_small(size_start, dim_size_max)
   start = np.random.uniform(low=-10., high=10., size=size_start).tolist()
   stop = np.random.uniform(low=-10., high=10., size=size_stop).tolist()
   num = np.random.choice([2, 3, dim_size_max])
@@ -548,9 +577,9 @@ def testAllclose(dims, dim_size_max):
 def testTranspose(dims, dim_size_max):
   import numpy as np
   import APIs.transpose as transpose
-  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(2, dims+1))])
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
-  axis = np.random.choice([None, np.random.permutation(len(size)).tolist()])
+  axis = None
   print(a, size)
   print(axis)
   with receiver:
@@ -560,8 +589,7 @@ def testTranspose(dims, dim_size_max):
 def testRavel(dims, dim_size_max):
   import numpy as np
   import APIs.ravel as ravel
-
-  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(2, dims+1))])
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
   print(a, size)
   with receiver:
@@ -571,10 +599,13 @@ def testRavel(dims, dim_size_max):
 def testMoveaxis(dims, dim_size_max):
   import numpy as np
   import APIs.moveaxis as moveaxis
-  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(3, dims+1))])
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
-  source = np.random.choice(len(size))
-  destination = np.random.choice(len(size))
+  source = np.random.choice(len(size) - 1)
+  destination = (source + 1)
+  print(a, size)
+  print(source)
+  print(destination)
   with receiver:
     ans = moveaxis.moveaxis_1(a, source, destination)
   print("moveaxis: ", ans)
@@ -582,8 +613,14 @@ def testMoveaxis(dims, dim_size_max):
 def testSqueeze(dims, dim_size_max):
   import numpy as np
   import APIs.squeeze as squeeze
-  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size = ([np.random.randint(2,dim_size_max+1) for i in range(np.random.randint(2, dims+1))])
+  l = len(size)
+  for i in range(l):
+    ind = np.random.randint(len(size))
+    size.insert(ind, 1)
+  size = tuple(size)
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  print(a, size)
   with receiver:
     ans = squeeze.squeeze_1(a)
   print("squeeze: ", ans)
@@ -591,9 +628,11 @@ def testSqueeze(dims, dim_size_max):
 def testReshape(dims, dim_size_max):
   import numpy as np
   import APIs.reshape as reshape
-  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  size = tuple([np.random.randint(2,dim_size_max+1) for i in range(np.random.randint(2, dims+1))])
+  a = np.random.uniform(low=-10., high=10., size=np.prod(size)).tolist()
   newshape = np.random.permutation(size)
+  print(a, size)
+  print(newshape)
   with receiver:
     ans = reshape.reshape_1(a, newshape)
   print("reshape: ", ans)
@@ -601,8 +640,9 @@ def testReshape(dims, dim_size_max):
 def testAtleast1D(dims, dim_size_max):
   import numpy as np
   import APIs.atleast_1d as atleast_1d
-  size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  size = tuple([np.random.randint(1,dim_size_max*dims+1) for i in range(np.random.randint(0, 2))])
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
+  print(a, size)
   with receiver:
     ans = atleast_1d.atleast_1d_1(a)
   print("atleast 1d: ", ans)
@@ -618,7 +658,7 @@ def testConcatenate(dims, dim_size_max):
     axis = None
   else:
     axis = np.random.choice([None, np.random.choice(possibilities).tolist()])
-  N = np.random.randint(1, dims+1) # Number of arrays to concatenate, using dims variable
+  N = np.random.randint(2, dims+1) # Number of arrays to concatenate, using dims variable
   arrays = []
   print(axis)
   for i in range(N):
@@ -638,7 +678,7 @@ def testVstack(dims, dim_size_max):
   import numpy as np
   import APIs.vstack as vstack
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  N = np.random.randint(1, dims+1) # Number of arrays to concatenate, using dims variable
+  N = np.random.randint(2, dims+1) # Number of arrays to concatenate, using dims variable
   arrays = []
   for i in range(N):
     if len(size) != 1:
@@ -657,7 +697,7 @@ def testHstack(dims, dim_size_max):
   import numpy as np
   import APIs.hstack as hstack
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  N = np.random.randint(1, dims+1) # Number of arrays to concatenate, using dims variable
+  N = np.random.randint(2, dims+1) # Number of arrays to concatenate, using dims variable
   arrays = []
   for i in range(N):
     if len(size) != 1:
@@ -676,8 +716,8 @@ def testStack(dims, dim_size_max):
   import numpy as np
   import APIs.stack as stack
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
-  axis = np.random.choice([np.random.randint(0, 1+len(size))]).tolist()
-  N = np.random.randint(1, dims+1) # Number of arrays to concatenate, using dims variable
+  axis = len(size)
+  N = np.random.randint(2, dims+1) # Number of arrays to concatenate, using dims variable
   arrays = []
   print(axis)
   for i in range(N):
@@ -694,6 +734,8 @@ def testTile(dims, dim_size_max):
   size = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
   a = np.random.uniform(low=-10., high=10., size=size).tolist()
   reps = tuple(np.random.choice(np.arange(1,dim_size_max+1), size=np.random.choice(dims)).tolist())
+  if np.prod(reps) == 1:
+    reps = (2,)
   print(a, size)
   print(reps)
   with receiver:
@@ -703,12 +745,13 @@ def testTile(dims, dim_size_max):
 def testAppend(dims, dim_size_max):
   import numpy as np
   import APIs.append as append
-  size, arr, axis, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  size, arr, _, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  axis = np.random.choice(len(size))
   size_values = list(size)
-  if axis is not None:
-    size_values[axis] = np.random.randint(1, dim_size_max+1) # Concatenated axis may be different in all operands
-  else:
-    size_values = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
+  # if axis is not None:
+  size_values[axis] = 1 # Concatenated axis may be different in all operands
+  # else:
+  #   size_values = tuple([np.random.randint(1,dim_size_max+1) for i in range(np.random.randint(1, dims+1))])
   values = np.random.uniform(low=-10., high=10., size=size_values).tolist()
   print(arr, size)
   print(values, size_values)
@@ -727,6 +770,9 @@ def testInsert(dims, dim_size_max):
     index = np.random.choice(size[axis])
   value = np.random.randint(-10, 10)
   print(arr, size)
+  print(index)
+  print(value)
+  print(axis)
   with receiver:
     ans = insert.insert_1(arr, index, value, axis)
   print("insert: ", ans)
@@ -735,8 +781,10 @@ def testRepeat(dims, dim_size_max):
   import numpy as np
   import APIs.repeat as repeat
   size, a, axis, _ = get_random_init_complex_reduction(dims, dim_size_max)
-  repeats = np.random.choice(dim_size_max)
+  repeats = np.random.randint(2, dim_size_max+1)
   print(a, size)
+  print(repeats)
+  print(axis)
   with receiver:
     ans = repeat.repeat_1(a, repeats, axis)
   print("repeats: ", ans)
@@ -761,8 +809,11 @@ def testDiag(dims, dim_size_max):
   import numpy as np
   import APIs.diag as diag
   dim_size_max_2 = (dims * dim_size_max) // 2
+  # l = np.random.randint(2,dim_size_max_2+1)
+  # size = tuple([l for i in range(np.random.randint(1, 3))])
+  # v = np.random.uniform(low=-10., high=10., size=size).tolist()
   size, v, _, _ = get_random_init_complex_reduction(2, dim_size_max_2)
-  k = np.random.choice(dim_size_max_2)
+  k = np.random.choice(np.min(size))
   print(v, size)
   print(k)
   with receiver:
@@ -830,6 +881,7 @@ def testUnique(dims, dim_size_max):
   import numpy as np
   import APIs.unique as unique
   size, a, _, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  a = np.asarray(a).astype(int).tolist()
   print(a, size)
   with receiver:
     ans = unique.unique_1(a)
@@ -839,7 +891,7 @@ def testSearchsorted(dims, dim_size_max):
   import numpy as np
   import APIs.searchsorted as searchsorted
   size_a, a, _, _ = get_random_init_complex_reduction(1, dims * dim_size_max)
-  size_v, v, _, _ = get_random_init_complex_reduction(dims, dim_size_max)
+  size_v, v, _, _ = get_random_init_complex_reduction(1, dim_size_max)
   print(a, size_a)
   print(v, size_v)
   a = np.sort(a).tolist()
@@ -903,29 +955,6 @@ def generateDataset(mode, num_datapoints):
   np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
   receiver.clear_cumulative_data()
 
-# testMatrixMultiplication()
-#random.seed(1)
-#lower = 10
-#upper = 30
-#generateDataset("train", 10000)
-#random.seed(5196)
-#lower = 10
-#upper = 30
-#generateDataset("test", 3000)
-#random.seed(61295)
-#lower = 30
-#upper = 50
-#generateDataset("testL", 3000)
-#random.seed(282)
-#lower = 50
-#upper = 100
-#generateDataset("testLL", 500)
-# random.seed(1906)
-# lower = 200
-# upper = 500
-# generateDataset("testLLLL", 500)
-# testReductionSum()
-# testMatrixMultiplication()
 
 IntToClassMapping = {
   0: "Sum",
@@ -935,25 +964,45 @@ IntToClassMapping = {
   4: "Mean",
   5: "All",
   6: "Any",
-  7: "Add",
-  8: "Subtract",
-  9: "Multiply",
-  10: "Divide",
-  11: "Power",
-  12: "Abs",
-  13: "Exp",
-  14: "Sqrt",
-  15: "Zeros",
-  16: "ZerosLike",
-  17: "Ones",
-  18: "OnesLike",
-  19: "Shape",
-  20: "Transpose",
-  21: "Eye",
-  22: "Concatenate",
-  23: "Dot",
-  24: "Linspace",
-  25: "Arange",
+  7: "Count_Nonzero",
+  8: "Std",
+  9: "Cumsum",
+  10: "Argmax",
+  11: "Argmin",
+  12: "Add",
+  13: "Where",
+  14: "Dot",
+  15: "Matmul",
+  16: "Outer",
+  17: "Clip",
+  18: "Diff",
+  19: "Arange",
+  20: "Linspace",
+  21: "Allclose",
+  22: "Transpose",
+  23: "Ravel",
+  24: "Moveaxis",
+  25: "Squeeze",
+  26: "Reshape",
+  27: "Atleast_1D",
+  28: "Concatenate",
+  29: "Vstack",
+  30: "Hstack",
+  31: "Stack",
+  32: "Tile",
+  33: "Append",
+  34: "Insert",
+  35: "Repeat",
+  36: "Eye",
+  37: "Diag",
+  38: "Full",
+  39: "Sort",
+  40: "Argsort",
+  41: "Percentile",
+  42: "Median",
+  43: "Unique",
+  44: "Searchsorted",
+  45: "Take",
 }
 
 def generateDataset(mode, num_datapoints, instance_id):
@@ -965,41 +1014,29 @@ def generateDataset(mode, num_datapoints, instance_id):
     return [i for l in lol for i in l]
   def get_sizes(mode, choice):
     if mode == "train":
-      if choice >= 24:
-        return (2, 2)
-      else:
-        return (2, 6)
+      return (3, 4)
     elif mode == "test":
-      if choice >= 24:
-        return (2, 2)
-      else:
-        return (2, 6)
+      return (3, 4)
     elif mode == "testL":
-      if choice >= 24:
-        return (3, 3)
-      else:
-        return (3, 7)
+      return (3, 10)
     elif mode == "testLL":
-      if choice >= 24:
-        return (3, 4)
-      else:
-        return (3, 10)
-    elif mode == "testLLL":
-      if choice >= 24:
-        return (3, 5)
-      else:
-        return (3, 20)
+      return (4, 5)
   for i in range(num_datapoints):
     st = time()
-    choice = random.randint(0,25)
+    choice = random.randint(0,45)
     labels.append(choice)
+    trace = np.random.choice([True, False])
+    print("trace: ", trace)
+    receiver.set_trace_comparisions(trace)
     if choice == 0:
       testReductionSum(*get_sizes(mode, choice))
     elif choice == 1:
       testReductionProd(*get_sizes(mode, choice))
     elif choice == 2:
+      receiver.set_trace_comparisions(True)
       testReductionMax(*get_sizes(mode, choice))
     elif choice == 3:
+      receiver.set_trace_comparisions(True)
       testReductionMin(*get_sizes(mode, choice))
     elif choice == 4:
       testReductionMean(*get_sizes(mode, choice))
@@ -1008,43 +1045,94 @@ def generateDataset(mode, num_datapoints, instance_id):
     elif choice == 6:
       testReductionAny(*get_sizes(mode, choice))
     elif choice == 7:
-      testAdd(*get_sizes(mode, choice))
+      receiver.set_trace_comparisions(True)
+      testReductionCountNonzero(*get_sizes(mode, choice))
     elif choice == 8:
-      testSubtract(*get_sizes(mode, choice))
+      testReductionStd(*get_sizes(mode, choice))
     elif choice == 9:
-      testMultiply(*get_sizes(mode, choice))
+      testReductionCumsum(*get_sizes(mode, choice))
     elif choice == 10:
-      testDivide(*get_sizes(mode, choice))
+      receiver.set_trace_comparisions(True)
+      testReductionArgmax(*get_sizes(mode, choice))
     elif choice == 11:
-      testPower(*get_sizes(mode, choice))
+      receiver.set_trace_comparisions(True)
+      testReductionArgmin(*get_sizes(mode, choice))
     elif choice == 12:
-      testAbs(*get_sizes(mode, choice))
+      testAdd(*get_sizes(mode, choice))
     elif choice == 13:
-      testExp(*get_sizes(mode, choice))
+      receiver.set_trace_comparisions(True)
+      testWhere(*get_sizes(mode, choice))
     elif choice == 14:
-      testSqrt(*get_sizes(mode, choice))
-    elif choice == 15:
-      testZeros(*get_sizes(mode, choice))
-    elif choice == 16:
-      testZerosLike(*get_sizes(mode, choice))
-    elif choice == 17:
-      testOnes(*get_sizes(mode, choice))
-    elif choice == 18:
-      testOnesLike(*get_sizes(mode, choice))
-    elif choice == 19:
-      testShape(*get_sizes(mode, choice))
-    elif choice == 20:
-      testTranspose(*get_sizes(mode, choice))
-    elif choice == 21:
-      testEye(*get_sizes(mode, choice))
-    elif choice == 22:
-      testConcatenate(*get_sizes(mode, choice))
-    elif choice == 23:
       testDot(*get_sizes(mode, choice))
-    elif choice == 24:
-      testLinspace(*get_sizes(mode, choice))
-    elif choice == 25:
+    elif choice == 15:
+      testMatmul(*get_sizes(mode, choice))
+    elif choice == 16:
+      testOuter(*get_sizes(mode, choice))
+    elif choice == 17:
+      testClip(*get_sizes(mode, choice))
+    elif choice == 18:
+      testDiff(*get_sizes(mode, choice))
+    elif choice == 19:
       testArange(*get_sizes(mode, choice))
+    elif choice == 20:
+      testLinspace(*get_sizes(mode, choice))
+    elif choice == 21:
+      receiver.set_trace_comparisions(True)
+      testAllclose(*get_sizes(mode, choice))
+    elif choice == 22:
+      testTranspose(*get_sizes(mode, choice))
+    elif choice == 23:
+      testRavel(*get_sizes(mode, choice))
+    elif choice == 24:
+      testMoveaxis(*get_sizes(mode, choice))
+    elif choice == 25:
+      testSqueeze(*get_sizes(mode, choice))
+    elif choice == 26:
+      testReshape(*get_sizes(mode, choice))
+    elif choice == 27:
+      testAtleast1D(*get_sizes(mode, choice))
+    elif choice == 28:
+      testConcatenate(*get_sizes(mode, choice))
+    elif choice == 29:
+      testVstack(*get_sizes(mode, choice))
+    elif choice == 30:
+      testHstack(*get_sizes(mode, choice))
+    elif choice == 31:
+      testStack(*get_sizes(mode, choice))
+    elif choice == 32:
+      testTile(*get_sizes(mode, choice))
+    elif choice == 33:
+      testAppend(*get_sizes(mode, choice))
+    elif choice == 34:
+      testInsert(*get_sizes(mode, choice))
+    elif choice == 35:
+      testRepeat(*get_sizes(mode, choice))
+    elif choice == 36:
+      testEye(*get_sizes(mode, choice))
+    elif choice == 37:
+      testDiag(*get_sizes(mode, choice))
+    elif choice == 38:
+      testFull(*get_sizes(mode, choice))
+    elif choice == 39:
+      receiver.set_trace_comparisions(True)
+      testSort(*get_sizes(mode, choice))
+    elif choice == 40:
+      receiver.set_trace_comparisions(True)
+      testArgSort(*get_sizes(mode, choice))
+    elif choice == 41:
+      receiver.set_trace_comparisions(True)
+      testPercentile(*get_sizes(mode, choice))
+    elif choice == 42:
+      receiver.set_trace_comparisions(True)
+      testMedian(*get_sizes(mode, choice))
+    elif choice == 43:
+      receiver.set_trace_comparisions(True)
+      testUnique(*get_sizes(mode, choice))
+    elif choice == 44:
+      receiver.set_trace_comparisions(True)
+      testSearchsorted(*get_sizes(mode, choice))
+    elif choice == 45:
+      testTake(*get_sizes(mode, choice))
     else:
       assert False, "Unexpected choice"
     en = time()
@@ -1092,14 +1180,10 @@ def predict():
 
 
 def testWildImpl():
-  import Datasets.Wild.max as totest
+  import Datasets.Wild.median as totest
   import numpy as np
-  length = 3
-  a = np.random.randint(-10, 10, length).tolist()
-  # b = 
-  # a = 1
-  # b = 20
-  # c = 5
+  length = np.random.randint(3, 10)
+  a = np.random.random(size=length).tolist()
   print("inp: ", a)
   with receiver:
     ans = totest.func1(a)
@@ -1115,29 +1199,15 @@ def testWildImpl():
 # random.seed(92)
 import time
 st = time.time()
+import numpy as np
 for i in range(100):
   # testWildImpl()
   # testMergeSort()
-  testWhere(3, 3)
+  trace = np.random.choice([True, False])
+  print("trace: ", trace)
+  receiver.set_trace_comparisions(trace)
+  testTake(3, 3)
   # predict()
 en = time.time()
 print(en - st)
 patcher.uninstall()
-
-# allNodeDetails, allEdgeDetails, nodeEdgeCounts = receiver.receiverData
-# import numpy as np
-
-# def flatten(lol):
-#   return [i for l in lol for i in l]
-
-# allNodeDetails = np.asarray(flatten(allNodeDetails))
-# allEdgeDetails = np.asarray(flatten(allEdgeDetails))
-# nodeEdgeCounts = np.concatenate([np.asarray(nodeEdgeCounts), np.expand_dims(np.asarray(labels), axis=1)], axis=1)
-
-# mode = "dump"
-
-# np.save("/usr/local/lib/python3.9/site-packages/jraph/nodes%s.npy"%mode, allNodeDetails)
-# np.save("/usr/local/lib/python3.9/site-packages/jraph/edges%s.npy"%mode, allEdgeDetails)
-# np.save("/usr/local/lib/python3.9/site-packages/jraph/index%s.npy"%mode, nodeEdgeCounts)
-# print("orig: " + str(orig_arr))
-# print("out: " + str(arr))

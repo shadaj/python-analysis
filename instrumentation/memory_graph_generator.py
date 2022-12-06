@@ -175,10 +175,21 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
   oldChildVersion = variableToLatestVersion.get(child.var_name, None)
   variableToLatestVersion[child.var_name] = child.version
 
-  if (cnst_val := get_const_number_instance(child)) is not None:
-    G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact, const_val = cnst_val)
+  isZero = False
+  for dep in depList:
+    parent = dep[1]
+    parentStr = element_to_str(parent)
+    cnst_val = get_const_number_instance(parent)
+    if operation == "2*" and cnst_val == bound_cnst(0):
+      isZero = True
+
+  if isZero:
+     G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact, const_val = bound_cnst(0))
   else:
-    G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact)
+    if (cnst_val := get_const_number_instance(child)) is not None:
+      G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact, const_val = cnst_val)
+    else:
+      G.add_node(childStr, pos=(child.var_name, child.version), frame = frameId, op = operation, fact = establishedFact)
 
   if oldChildVersion is not None:
     oldChildStr = element_to_str(child, oldChildVersion)
@@ -206,7 +217,7 @@ def add_dependency_internal(frameId: int, depList: List[Tuple[Union[SymbolicElem
     cnst_val = get_const_number_instance(parent)
     if operation == "2+" and cnst_val == bound_cnst(0):
       pass
-    elif operation == "2*" and cnst_val == bound_cnst(1):
+    elif operation == "2*" and (cnst_val == bound_cnst(1) or cnst_val == bound_cnst(0)):
       pass
     elif (operation == "2/" or operation == "2//") and cnst_val == bound_cnst(1) and dep_i == 1:
       pass
@@ -244,8 +255,9 @@ def set_output_internal(element: Union[StackElement, SymbolicElement], counter: 
 
 def normalize_outputs(element: Union[StackElement, SymbolicElement], normalizer: int) -> None:
   global outputMap
-  outputMap[element_to_str(element)][2] /= normalizer
-  outputMap[element_to_str(element)] = tuple(outputMap[element_to_str(element)])
+  if not isinstance(outputMap[element_to_str(element)], tuple):
+    outputMap[element_to_str(element)][2] /= normalizer
+    outputMap[element_to_str(element)] = tuple(outputMap[element_to_str(element)])
   for i in element.heap_elem.collection_heap_elems:
     normalize_outputs(i, normalizer)
 
@@ -290,7 +302,7 @@ def is_input(nodeStr: str) -> bool:
   global inputs
   return nodeStr in inputs
 
-def generate_memory_graph():
+def generate_memory_graph(trace_comparisions):
   global allObservedPositions, G, dependencyCount, variableToLatestVersion, generatedGraphs, object_id_to_heap_element_map, edgeMap, edgeCounter, inputs, outputs, inputMap, outputMap, num_inputs, num_outputs, edgesSum, nodesSum
   assert nx.is_directed_acyclic_graph(G)
   maxIndex = 0
@@ -365,8 +377,13 @@ def generate_memory_graph():
           if ((operation is not None) or (const is not None and len(childOp) > 0)) and node in relevantNodes:
             continue
         elif stage == 2:
-          if not (operation is not None and len(parents) < arity):
-            continue
+          if trace_comparisions:
+            if not (operation is not None and len(parents) < arity):
+              continue
+          else:
+            if op != "?":
+              if not (operation is not None and len(parents) < arity):
+                continue
         elif stage == 4:
           if op == "?":
             continue

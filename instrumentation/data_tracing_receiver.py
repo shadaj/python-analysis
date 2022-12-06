@@ -73,6 +73,7 @@ class DataTracingReceiver(EventReceiver):
   set_methods: Set[HeapElement]
   first_frame: Optional[FrameType]
   prev_op: str
+  trace_comparisions: bool = True
 
   def reset_receiver(self) -> None:
     self.function_call_stack = []
@@ -93,6 +94,7 @@ class DataTracingReceiver(EventReceiver):
     self.set_methods = set()
     self.first_frame = None
     self.prev_op = ""
+    # We do not set self.trace_comparisions here as that is controlled in the outermost loop
     set_current_heap_object_tracker(self.heap_object_tracking)
 
   def __init__(self) -> None:
@@ -114,12 +116,16 @@ class DataTracingReceiver(EventReceiver):
     self.set_methods = set()
     self.first_frame = None
     self.prev_op = ""
+    self.trace_comparisions = True
     set_current_heap_object_tracker(self.heap_object_tracking)
     super().__init__()
 
+  def set_trace_comparisions(self, trace):
+    self.trace_comparisions = trace
+
   def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
     super().__exit__(exc_type, exc_val, exc_tb)
-    self.receiverData = generate_memory_graph(), self.timetaken
+    self.receiverData = generate_memory_graph(self.trace_comparisions), self.timetaken
     set_current_heap_object_tracker(None)
 
   def clear_cumulative_data(self) -> None:
