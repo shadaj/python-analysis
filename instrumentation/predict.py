@@ -9,7 +9,7 @@ import pathlib
 import pickle
 import numpy as np
 
-num_classes = 26
+num_classes = 46
 enable_jit = False
 hidden_dim = 512
 
@@ -18,7 +18,7 @@ def edge_update_fn(edges: jnp.ndarray, sent: jnp.ndarray, receive: jnp.ndarray, 
   net = hk.Sequential(
       [hk.Linear(hidden_dim), jax.nn.relu,
        hk.Linear(hidden_dim)])
-  return net(jnp.concatenate([edges, receive, glob], axis=1))
+  return net(jnp.concatenate([edges, sent, receive, glob], axis=1))
 
 
 def node_update_fn(nodes: jnp.ndarray, sent: jnp.ndarray, receive: jnp.ndarray, glob: jnp.ndarray) -> jnp.ndarray:
@@ -26,7 +26,7 @@ def node_update_fn(nodes: jnp.ndarray, sent: jnp.ndarray, receive: jnp.ndarray, 
   net = hk.Sequential(
       [hk.Linear(hidden_dim), jax.nn.relu,
        hk.Linear(hidden_dim)])
-  return net(jnp.concatenate([nodes, receive, glob], axis=1))
+  return net(jnp.concatenate([nodes, sent, receive, glob], axis=1))
 
 
 def update_global_fn(nodes: jnp.ndarray, edges: jnp.ndarray, glob: jnp.ndarray) -> jnp.ndarray:
@@ -82,8 +82,9 @@ def compute_loss(params, graph, label, net):
   pred_graph = net.apply(params, graph)
 
   preds = jax.nn.log_softmax(pred_graph.globals, axis=1)
-  print(jax.nn.softmax(pred_graph.globals, axis=1))
-  return jnp.argmax(preds, axis=1)[0]
+  raw_preds = jax.nn.softmax(pred_graph.globals, axis=1)
+  label_pos = num_classes - jnp.where(jnp.argsort(preds, axis=1)[0] == label[0])[0]
+  return jnp.argmax(preds, axis=1)[0], jnp.max(raw_preds, axis=1)[0], label_pos
 
 
 def evaluate(nodes, edges, index):
@@ -110,8 +111,8 @@ def evaluate(nodes, edges, index):
     # Since padding is implemented with pad_with_graphs, an extra graph has
     # been added to the batch, which means there should be an extra label.
   label = jnp.concatenate([label, jnp.array([-1])])
-  prediction = compute_loss_fn(params, graph, label)
-  return prediction.item()
+  prediction, confidence, label_pos = compute_loss_fn(params, graph, label)
+  return prediction.item(), confidence.item(), label_pos.item()
 
 def getnparray(raw):
     ret = np.atleast_2d(np.asarray(raw))
