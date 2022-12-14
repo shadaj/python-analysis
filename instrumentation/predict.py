@@ -1,4 +1,4 @@
-import logging
+import os
 import haiku as hk
 import jax.numpy as jnp
 import jraph
@@ -89,10 +89,11 @@ def compute_loss(params, graph, label, net):
 
 def evaluate(nodes, edges, index):
   """Evaluation Script."""
-  save_dir = "/usr/local/lib/python3.9/site-packages/jraph/ogb_examples/model"
-  model_name = "molhiv.pkl"
+  filedir = os.path.dirname(os.path.realpath(__file__))
+  save_dir = "model"
+  model_name = "model.pkl"
   net = hk.without_apply_rng(hk.transform(net_fn))
-  with pathlib.Path(save_dir, model_name).open('rb') as fp:
+  with pathlib.Path(filedir, save_dir, model_name).open('rb') as fp:
     params = pickle.load(fp)
 
   compute_loss_fn = (
