@@ -16,7 +16,7 @@ def main(_):
 
   filedir = os.path.dirname(os.path.realpath(__file__))
   os.chdir(filedir)
-  openai.api_key = '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'
+  openai.api_key = os.getenv("OPENAI_API_KEY")
   path = os.path.join('Datasets', 'Wild-baseline-' + FLAGS.dataset)
   model =  FLAGS.model
   files = [i for i in os.listdir(os.path.join(path)) if i[-3:] == ".py" and i != "test.py"]
