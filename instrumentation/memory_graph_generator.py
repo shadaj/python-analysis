@@ -445,25 +445,25 @@ def generate_memory_graph(trace_comparisions):
     for node in toRemove:
       G.remove_node(node)
 
-  print(len(G.edges), len(G.nodes))
+  printDebug(len(G.edges), len(G.nodes))
 
   cleanGraph(1)
 
-  print(len(G.edges), len(G.nodes))
+  printDebug(len(G.edges), len(G.nodes))
 
   cleanGraph(2)
 
-  print(len(G.edges), len(G.nodes))
+  printDebug(len(G.edges), len(G.nodes))
 
   cleanGraph(3)
 
-  print(len(G.edges), len(G.nodes))
+  printDebug(len(G.edges), len(G.nodes))
 
   cleanGraph(4)
 
-  print(len(G.edges), len(G.nodes))
+  printDebug(len(G.edges), len(G.nodes))
 
-  print(len(relevantNodes))
+  printDebug(len(relevantNodes))
   
   relevantNodes = []
   for node in G.nodes:
@@ -485,12 +485,12 @@ def generate_memory_graph(trace_comparisions):
 
   cleanGraph(5)
 
-  print(len(G.edges), len(G.nodes))
+  printDebug(len(G.edges), len(G.nodes))
 
   edgesSum += len(G.edges)
   nodesSum += len(G.nodes)
 
-  print("!!!: ", edgesSum, ":::", nodesSum)
+  printDebug("!!!: ", edgesSum, ":::", nodesSum)
 
   def getXY(raw: Tuple[str, int]):
     return (positionStrToXcoord[raw[0]], raw[1])
@@ -531,11 +531,11 @@ def generate_memory_graph(trace_comparisions):
     else:
       pos[key] = (oldXtoNewXcoords[value[0]], value[1])
 
-  print(len(relevantNodes))
+  printDebug(len(relevantNodes))
 
   cleanGraph(6)
 
-  print(len(G.edges), len(G.nodes))
+  printDebug(len(G.edges), len(G.nodes))
 
   ops = {}
   for i, k in binary_ops.items():
