@@ -10,7 +10,7 @@ from absl import flags
 
 from instrumentation.data_tracing_receiver import DataTracingReceiver
 from instrumentation.module_loader import PatchingPathFinder
-from instrumentation.predict import evaluate
+from gnn.predict import evaluate
 
 from instrumentation.helper import IntToClassMapping, ClassToIntMapping
 
