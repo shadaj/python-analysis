@@ -1,8 +1,11 @@
-bytecode==0.11.0
-
+bytecode==0.13.0
+matplotlib==3.5.0
 pytest==4.4.1
 snapshottest==0.5.1
-
-numpy==1.19.0
-
+networkx==2.6.3
+numpy==1.21.4
+jax==0.3.24
+jaxlib==0.3.24
 mypy==0.790
+dm-haiku==0.0.8
+jraph

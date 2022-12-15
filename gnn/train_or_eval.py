@@ -30,7 +30,6 @@ import jraph
 from jraph._src import utils
 import optax
 import numpy as np
-from sklearn.metrics import confusion_matrix
 from data_load import get_graph, setEval, get_graph_test, read_train_data, read_eval_data
 
 # from jax.config import config
@@ -150,9 +149,9 @@ def compute_loss(params, graph, label, net):
       (jnp.argmax(preds, axis=1) == label) * mask), jnp.sum(mask)
   return loss, (correct, total)
 
-cm = np.zeros(shape=(num_classes, num_classes))
+# cm = np.zeros(shape=(num_classes, num_classes))
 def compute_loss_(params, graph, label, net):
-  global cm
+  # global cm
   """Computes loss."""
   global num_classes
   pred_graph = net.apply(params, graph)
@@ -174,7 +173,7 @@ def compute_loss_(params, graph, label, net):
   lim = np.array(jnp.sum(mask)).item()
   np_targets = np.array(jnp.argmax(preds, axis=1))[:lim]
   np_labels = np.array(label)[:lim]
-  cm += confusion_matrix(np_labels, np_targets, labels=list(range(num_classes)))
+  # cm += confusion_matrix(np_labels, np_targets, labels=list(range(num_classes)))
   return loss, (correct, total)
 
 
@@ -318,14 +317,14 @@ def evaluate(data_path, save_dir, model_name, test_mode):
 
 
 def main(_):
-  global cm
+  # global cm
   if FLAGS.mode == 'train':
     train(FLAGS.data_path, 
           FLAGS.batch_size, FLAGS.num_epochs, FLAGS.save_dir, FLAGS.model_name)
   elif FLAGS.mode == 'evaluate':
     evaluate(FLAGS.data_path, 
               FLAGS.save_dir, FLAGS.model_name, FLAGS.testMode)
-    print(cm)
-    np.save("confusion.npy", cm)
+    # print(cm)
+    # np.save("confusion.npy", cm)
 if __name__ == '__main__':
   app.run(main)
